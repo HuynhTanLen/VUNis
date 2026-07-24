@@ -1,0 +1,63 @@
+# ──────────────────────────────────────────
+# Dependencies
+# ──────────────────────────────────────────
+node_modules/
+
+# ──────────────────────────────────────────
+# Build output
+# ──────────────────────────────────────────
+dist/
+dist-ssr/
+.next/
+
+# ──────────────────────────────────────────
+# Biến môi trường (BẢO MẬT - KHÔNG push lên Git!)
+# ──────────────────────────────────────────
+.env
+.env.local
+.env.production
+*.local
+server/.env
+server/.env.local
+
+# ──────────────────────────────────────────
+# Logs
+# ──────────────────────────────────────────
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ──────────────────────────────────────────
+# Upload files (dữ liệu user, không push)
+# ──────────────────────────────────────────
+server/uploads/
+server/.gitignore
+
+# ──────────────────────────────────────────
+# Editor & OS files
+# ──────────────────────────────────────────
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ──────────────────────────────────────────
+# Tài liệu và cấu hình Agent (Không push)
+# ──────────────────────────────────────────
+.clinerules
+.agent
+.cursorrules
+Huong_Dan_Thuc_Hanh.md
+INSTALL_GUIDE.md
+SKILL.md
+STUDY_GUIDE.md

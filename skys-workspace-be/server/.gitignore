@@ -1,0 +1,11 @@
+﻿# Backend
+node_modules/
+
+# Security
+.env
+.env.local
+uploads/
+
+# Logs
+*.log
+logs/
