@@ -27,25 +27,29 @@ const seedDefaultData = async () => {
         const User = require('../modules/auth/auth.schema');
         const bcrypt = require('bcryptjs');
 
-        const adminExists = await User.findOne({ email: 'admin@skys.com' });
+        const adminEmail = process.env.ADMIN_EMAIL || 'admin@skys.com';
+        const adminPassword = process.env.ADMIN_PASSWORD || 'Admin@123';
+
+        const adminExists = await User.findOne({ email: adminEmail });
         if (!adminExists) {
-            const hashedPassword = await bcrypt.hash('Admin@123', 10);
+            const hashedPassword = await bcrypt.hash(adminPassword, 10);
             await User.create({
                 name: 'System Admin',
-                email: 'admin@skys.com',
+                email: adminEmail,
                 password: hashedPassword,
                 role: User.ADMIN_ROLES.SUPER_ADMIN,
                 status: 'offline',
                 isBlocked: false
             });
-            console.log('✅ Đã tạo tài khoản Super Admin mặc định (admin@skys.com / Admin@123) với vai trò SUPER_ADMIN');
+            console.log(`✅ Đã tạo tài khoản Super Admin từ môi trường env (${adminEmail})`);
         } else {
-            console.log('⚡ Tài khoản Admin mặc định đã tồn tại.');
+            console.log('⚡ Tài khoản Admin hệ thống đã tồn tại.');
         }
     } catch (error) {
         console.error('❌ Lỗi khi seed dữ liệu mặc định:', error.message);
     }
 };
+
 
 module.exports = connectDatabase;
 

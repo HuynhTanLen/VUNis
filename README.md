@@ -165,11 +165,11 @@ npm run dev
 ```
 Giao diện Web sẽ khởi chạy tại: `http://localhost:3000`
 
-### 🔑 Tài khoản Super Admin mặc định
-Khi khởi động server lần đầu tiên, hệ thống tự động khởi tạo tài khoản Admin tối cao:
-* **Email**: `admin@skys.com`
-* **Mật khẩu**: `Admin@123`
-* **Role**: `SUPER_ADMIN`
+### 🔑 Khởi tạo Tài khoản Admin Hệ thống (Security Configuration)
+Tài khoản Admin tối cao được khởi tạo tự động an toàn thông qua biến môi trường trong file `.env`:
+* **Email Admin**: Đọc từ biến môi trường `ADMIN_EMAIL`
+* **Mật khẩu**: Đọc từ biến môi trường `ADMIN_PASSWORD` (được tự động băm mã hóa bằng `bcrypt` trước khi lưu vào Database).
+
 
 ---
 
