@@ -148,7 +148,7 @@ cd skys-workspace-be
 npm install
 
 # Khởi động Server
-npm start
+node server.js
 ```
 Server Backend sẽ lắng nghe tại: `http://localhost:5000`
 
