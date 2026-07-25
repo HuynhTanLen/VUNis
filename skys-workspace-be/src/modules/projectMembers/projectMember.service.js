@@ -8,6 +8,8 @@ const { ProjectMemberNotFoundError } = require('./projectMember.error');
 const Project = require('../projects/project.schema');
 const User = require('../auth/auth.schema');
 const { NotFoundError, ConflictError } = require('../../shared/errors/AppError');
+const {getRolesByTeamType} = require('../../shared/constants/teamRoles');
+
 
 const getMembersByProject = async (projectId) => {
     const projectExists = await Project.findById(projectId);
@@ -32,7 +34,7 @@ const addMemberToProject = async (dto) => {
     const member = await memberRepo.create({
         user: targetUser._id,
         project: dto.projectId,
-        role: dto.role,
+        role: dto.role || 'MEMBER',
         status: 'accepted'
     });
 
@@ -55,9 +57,24 @@ const removeMember = async (id) => {
     return { message: 'Đã xóa thành viên khỏi dự án' };
 };
 
+const getTeamMembers = async(projectId, teamType) => {
+    const projectExists = await Project.findById(projectId);
+    if(!projectExists) throw new NotFoundError('Dự án');
+    const rolesArray = getRolesByTeamType(teamType)
+    const member = await memberRepo.findByRoles(
+        projectId, rolesArray)
+
+    return {
+        teamType: teamType || 'ALL',
+        teamSize: members.length,
+        members: memberMapper.toProjectMemberListResponse(members)
+    }
+}
+
 module.exports = {
     getMembersByProject,
     addMemberToProject,
     updateMemberRole,
-    removeMember
+    removeMember,
+    getTeamMembers
 };

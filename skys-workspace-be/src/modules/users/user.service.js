@@ -4,24 +4,9 @@
  */
 const userRepo = require('./user.repository');
 const User = require('./user.schema');
-const UserStatusLog = require('../activityLogs/userStatusLog.schema');
+const UserStatusLog = require('../userStatusLog/userStatusLog.schema');
+const userMapper = require('./user.mapper')
 
-const toUserResponse = (user) => ({
-    id: user._id,
-    name: user.name,
-    email: user.email,
-    role: user.role || 'USER',
-    status: user.status || 'offline',
-    isBlocked: Boolean(user.isBlocked),
-    avatar: user.avatar || null,
-    phone: user.phone || null,
-    jobTitle: user.jobTitle || 'Software Engineer',
-    department: user.department || 'Engineering',
-    company: user.company || 'Skys Organization',
-    lastActiveAt: user.lastActiveAt || user.updatedAt,
-    createdAt: user.createdAt,
-    updatedAt: user.updatedAt
-});
 
 const getAllUsers = async (queryFilter = {}) => {
     const filter = {};
@@ -30,7 +15,7 @@ const getAllUsers = async (queryFilter = {}) => {
     if (queryFilter.isBlocked !== undefined) filter.isBlocked = queryFilter.isBlocked === 'true';
 
     const users = await userRepo.findAllUsers(filter);
-    return users.map(toUserResponse);
+    return userMapper.toUserResponse(users);
 };
 
 const getUserById = async (userId) => {
@@ -40,7 +25,7 @@ const getUserById = async (userId) => {
         error.statusCode = 404;
         throw error;
     }
-    return toUserResponse(user);
+    return userMapper.toUserResponse(user);
 };
 
 const updateProfile = async (currentUserId, targetUserId, dto) => {
@@ -64,7 +49,7 @@ const updateProfile = async (currentUserId, targetUserId, dto) => {
     if (dto.company !== undefined) updateData.company = dto.company;
 
     const updatedUser = await userRepo.updateUserProfile(targetUserId, updateData);
-    return toUserResponse(updatedUser);
+    return userMapper.toUserResponse(updatedUser);
 };
 
 
@@ -89,7 +74,7 @@ const changeUserRole = async (currentUserId, targetUserId, newRole) => {
         action: 'ROLE_CHANGED'
     });
 
-    return toUserResponse(updatedUser);
+    return userMapper.toUserResponse(updatedUser);
 };
 
 const toggleBlockUser = async (currentUserId, targetUserId, isBlocked) => {
@@ -119,7 +104,7 @@ const toggleBlockUser = async (currentUserId, targetUserId, isBlocked) => {
         action: isBlocked ? 'BLOCKED' : 'UNBLOCKED'
     });
 
-    return toUserResponse(updatedUser);
+    return userMapper.toUserResponse(updatedUser);
 };
 
 const removeUser = async (currentUserId, targetUserId) => {
@@ -177,7 +162,6 @@ module.exports = {
     toggleBlockUser,
     removeUser,
     getUserLogs,
-    toUserResponse,
     getStatusLogsStats
 };
 

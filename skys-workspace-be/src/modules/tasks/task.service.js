@@ -1,7 +1,8 @@
 const taskRepo = require('./task.repository');
 const taskMapper = require('./task.mapper');
 const projectRepo = require('../projects/project.repository');
-const { ValidationError } = require('../../shared/errors/AppError');
+const { ValidationError, ForbiddenError } = require('../../shared/errors/AppError');
+const { getTeamTypeByRole } = require('../../shared/constants/teamRoles');
 
 /**
  * Kiểm tra ngày của Task có nằm trong khoảng ngày của Dự án không.
@@ -95,6 +96,29 @@ const update = async (taskId, dto) => {
     return taskMapper.toTaskResponse(updatedTask);
 };
 
+const checkTaskPermission = (task, currentUserId, userProjectRole) =>{
+    if(userProjectRole === 'PROJECT_MANAGER') return;
+    const isAssigned = task.assigneeId?._id.toString() === currentUserId.toString() || task.assigneeId.toString() === currentUserId.toString(); 
+    
+    if(isAssigned) return;
+
+    const taskRole = task.role;
+
+    const isFrontendTeam = userProjectRole === 'FRONTEND_LEAD' && ['FRONTEND_LEAD','FRONTEND_MEMBER'].includes(taskRole);
+
+    const isBackendTeam = userProjectRole === 'BACKEND_LEAD' && ['BACKEND_LEAD','BACKEND_MEMBER'].includes(taskRole);
+
+    const isDesignTeam = userProjectRole === 'DESIGN_LEAD' && ['DESIGN_LEAD', 'UI_UX_DESIGNER'].includes(taskRole);
+
+    const isQaTeam = userProjectRole === 'QA_LEAD' && ['QA_LEAD', 'QA_TESTER'].includes(taskRole);
+
+    const isDevopsTeam = userProjectRole === 'DEVOPS_LEAD' && ['DEVOPS_LEAD', 'DEVOPS_ENGINEER'].includes(taskRole);
+
+    if (isFrontendTeam || isBackendTeam || isDesignTeam || isQaTeam || isDevopsTeam) {
+        return;
+    }throw new ForbiddenError('Bạn chỉ có quyền thao tác trên công việc đã được giao')
+}
+
 const remove = async (taskId) => {
     const task = await taskRepo.findTaskById(taskId);
     if (!task) {
@@ -107,30 +131,43 @@ const remove = async (taskId) => {
 };
 
 
-
-const toggleSubtaskService = async (taskId, subtaskId) => {
+const toggleSubtaskService = async (taskId, subTaskId, currentUserId, userProjectRole) => {
     const task = await taskRepo.findTaskById(taskId);
     if (!task) throw new ValidationError('Công việc không tồn tại');
-    return await taskRepo.toggleSubtask(taskId, subtaskId);
+
+    checkTaskPermission(task, currentUserId, userProjectRole)
+    const updateTask = await taskRepo.toggleSubtask(taskId, subTaskId)
+
+    return taskMapper.toTaskResponse(updateTask)
 };
 
-const addSubTaskService = async (taskId, title) => {
+const addSubTaskService = async (taskId, title, currentUserId, userProjectRole) => {
     const task = await taskRepo.findTaskById(taskId);
     if (!task) throw new ValidationError('Công việc không tồn tại');
-    return await taskRepo.addSubtask(taskId, { title, completed: false });
+    checkTaskPermission(task, currentUserId, userProjectRole)
+    const updateTask = await taskRepo.addSubtask(taskId, { title, completed: false });
+
+    return taskMapper.toTaskResponse(updateTask)
 };
 
-const removeSubTaskService = async (taskId, subTaskId) => {
+const removeSubTaskService = async (taskId, subTaskId, currentUserId, userProjectRole) => {
     const task = await taskRepo.findTaskById(taskId);
     if (!task) throw new ValidationError('Công việc không tồn tại');
-    return await taskRepo.removeSubtask(taskId, subTaskId);
+
+    checkTaskPermission(task, currentUserId, userProjectRole)
+    const updateTask = await taskRepo.removeSubtask(taskId, subTaskId);
+
+    return taskMapper.toTaskResponse(updateTask)
 };
 
-const editSubTaskService = async (taskId, subTaskId, title) => {
+const editSubTaskService = async (taskId, subTaskId, title, currentUserId, userProjectRole) => {
     const task = await taskRepo.findTaskById(taskId);
     if (!task) throw new ValidationError('Công việc không tồn tại');
-    return await taskRepo.editSubtask(taskId, subTaskId, title);
+    checkTaskPermission(task, currentUserId, userProjectRole)
+    const updateTask = await taskRepo.editSubtask(taskId, subTaskId, title);
+    return taskMapper.toTaskResponse(updateTask)
 };
+
 
 module.exports = { 
     getByProject, 

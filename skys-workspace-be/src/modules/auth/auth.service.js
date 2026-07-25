@@ -6,7 +6,7 @@
 const authRepo = require('./auth.repository');
 const authMapper = require('./auth.mapper');
 const { EmailExistsError, InvalidCredentialsError, UserNotFoundError } = require('./auth.error');
-const UserStatusLog = require('../activityLogs/userStatusLog.schema');
+const UserStatusLog = require('../userStatusLog/userStatusLog.schema');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const env = require('../../config/env');

@@ -4,6 +4,7 @@
  */
 const notifRepo = require('./notification.repository');
 const notifMapper = require('./notification.mapper');
+const Project = require('../projects/project.schema')
 const { NotificationNotFoundError } = require('./notification.error');
 
 const getUserNotifications = async (userId) => {
@@ -21,6 +22,37 @@ const sendNotification = async (dto) => {
     });
     return notifMapper.toNotificationResponse(notif);
 };
+
+const sendNotificationBulk = async(notifArray) =>{
+    const project = await Project.findById(projectId);
+    if(!project) throw new ProjectNotFoundError();
+    
+    const receiverId = new Set();
+    if(project.owner) receiverId.add(project.owner.toString());
+
+    if(Array.isArray(project.members)){
+        project.members.forEach( m =>{
+            const memberId = m.userId ? m.userId.toString() : m.toString();
+            if(memberId) receiverId.add(memberId);
+        });
+    }
+
+    receiverId.delete(senderId.toString());
+
+    const notifDocs = Array.from(receiverId).map(receiverId =>({
+        message,
+        type,
+        receiver: receiverId,
+        relatedProject: projectId,
+        isRead: false
+    }));
+
+    if(notifDocs.length > 0){
+        await notifRepo.createMany(notifDocs);
+    }
+    
+    return {message: `Đã gửi thông báo đến ${notifDocs.length} thành viên trong dự án.`};
+}
 
 const markRead = async (id) => {
     const updated = await notifRepo.markAsRead(id);
@@ -45,5 +77,6 @@ module.exports = {
     sendNotification,
     markRead,
     markAllRead,
-    removeNotification
+    removeNotification,
+    sendNotificationBulk
 };

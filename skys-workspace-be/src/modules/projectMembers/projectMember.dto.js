@@ -8,7 +8,7 @@ class AddProjectMemberDTO {
     constructor(body) {
         this.email = body.email?.trim() || '';
         this.projectId = body.projectId || body.project || null;
-        this.role = body.role?.trim() || 'Developer';
+        this.role = body.role?.trim() || 'MEMBER';
     }
 
     validate() {

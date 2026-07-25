@@ -5,11 +5,12 @@
  */
 const express = require('express');
 const router = express.Router();
-const { getTaskAttachments, uploadAttachment, deleteAttachment } = require('./attachment.controller');
+const { getTaskAttachments, uploadAttachment, deleteAttachment, editAttachment } = require('./attachment.controller');
 const { protect } = require('../../middleware/auth.middleware');
 
 router.get('/task/:taskId', protect, getTaskAttachments);
 router.post('/', protect, uploadAttachment);
 router.delete('/:id', protect, deleteAttachment);
+router.patch('/edit/:id',protect, editAttachment);
 
 module.exports = router;

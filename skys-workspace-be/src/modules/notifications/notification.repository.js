@@ -19,16 +19,20 @@ const create = async (data) => {
 };
 
 const markAsRead = (id) => {
-    return Notification.findByIdAndUpdate(id, { isRead: true }, { new: true });
+    return Notification.findByIdAndUpdate(id, { $set: { isRead: true } }, { new: true });
 };
 
 const markAllAsRead = (receiverId) => {
-    return Notification.updateMany({ receiver: receiverId, isRead: false }, { isRead: true });
+    return Notification.updateMany({ receiver: receiverId, isRead: false }, {$set: { isRead: true }});
 };
 
 const remove = (id) => {
     return Notification.findByIdAndDelete(id);
 };
+
+const createMany = (notifArray) =>{
+    return Notification.insertMany(notifArray);
+}
 
 module.exports = {
     findByReceiver,
@@ -36,5 +40,6 @@ module.exports = {
     create,
     markAsRead,
     markAllAsRead,
-    remove
+    remove,
+    createMany
 };

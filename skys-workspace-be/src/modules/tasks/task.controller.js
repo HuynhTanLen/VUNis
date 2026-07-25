@@ -1,10 +1,10 @@
 const taskService = require('./task.service');
 const { CreateTaskDTO, UpdateTaskDTO } = require('./task.dto');
-const asyncHandler = require('../../shared/asyncHandler');
+const asyncHandler = require('../../shared/constants/asyncHandler');
 
-const getTasksByProject =  asyncHandler( async (req, res) => {
-        const tasks = await taskService.getByProject(req.params.projectId);
-        res.status(200).json(tasks);
+const getTasksByProject = asyncHandler(async (req, res) => {
+    const tasks = await taskService.getByProject(req.params.projectId);
+    res.status(200).json(tasks);
 
 });
 
@@ -13,18 +13,18 @@ const createTask = asyncHandler(
         const dto = new CreateTaskDTO(req.body).validate();
         const task = await taskService.create(dto, req.user.userId);
         res.status(201).json(task);
-});
+    });
 
 const updateTask = asyncHandler(async (req, res) => {
-        const dto = new UpdateTaskDTO(req.body).validate();
-        const updated = await taskService.update(req.params.id, dto);
-        res.status(200).json(updated);
+    const dto = new UpdateTaskDTO(req.body).validate();
+    const updated = await taskService.update(req.params.id, dto);
+    res.status(200).json(updated);
 });
 
 const deleteTask = asyncHandler(async (req, res) => {
-        const taskId = req.params.id;
-        await taskService.remove(taskId);
-        res.status(200).json({ message: 'Xóa công việc thành công' });
+    const taskId = req.params.id;
+    await taskService.remove(taskId);
+    res.status(200).json({ message: 'Xóa công việc thành công' });
 });
 
 const addSubTask = asyncHandler(async (req, res) => {
@@ -51,13 +51,13 @@ const toggleSubTask = asyncHandler(async (req, res) => {
     res.json(task);
 });
 
-module.exports = { 
-    getTasksByProject, 
-    createTask, 
-    updateTask, 
-    deleteTask, 
-    addSubTask, 
-    removeSubTask, 
+module.exports = {
+    getTasksByProject,
+    createTask,
+    updateTask,
+    deleteTask,
+    addSubTask,
+    removeSubTask,
     editSubTask,
     toggleSubTask
 };

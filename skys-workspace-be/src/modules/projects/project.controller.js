@@ -1,6 +1,6 @@
 const projectService = require('./project.service');
 const { CreateProjectDTO, UpdateProjectDTO } = require('./project.dto');
-const asyncHandler = require('../../shared/asyncHandler');
+const asyncHandler = require('../../shared/constants/asyncHandler');
 
 const getProjects = asyncHandler(async (req, res) => {
     const userId = req.user._id || req.user.userId;
@@ -64,14 +64,14 @@ const getProjectMembers = asyncHandler(async (req, res) => {
     res.status(200).json(members);
 });
 
-module.exports = { 
-    getProjects, 
+module.exports = {
+    getProjects,
     getRootProjects,
     getSubProjects,
-    createProject, 
-    deleteProject, 
-    updateProject, 
-    getAllProjectsAdmin, 
+    createProject,
+    deleteProject,
+    updateProject,
+    getAllProjectsAdmin,
     deleteProjectAdmin,
     addProjectMember,
     getProjectMembers

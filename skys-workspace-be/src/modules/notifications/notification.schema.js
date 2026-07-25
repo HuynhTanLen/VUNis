@@ -13,7 +13,14 @@ const notificationSchema = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ['task_assigned', 'comment_mentioned', 'sprint_closing', 'deadline_approaching', 'system'],
+        enum: [ 
+                'task_assigned', 
+                'comment_mentioned', 
+                'sprint_closing', 
+                'deadline_approaching', 
+                'system',
+                'project_invitation'
+        ],
         default: 'system'
     },
     receiver: {
@@ -23,11 +30,13 @@ const notificationSchema = new mongoose.Schema({
     },
     relatedProject: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Project'
+        ref: 'Project',
+        default: null
     },
     relatedTask: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Task'
+        ref: 'Task',
+        default: null
     },
     isRead: {
         type: Boolean,
@@ -36,5 +45,7 @@ const notificationSchema = new mongoose.Schema({
 }, {
     timestamps: true
 });
+
+notificationSchema.index({receiver: 1, isRead: 1, createdAt: -1});
 
 module.exports = mongoose.model('Notification', notificationSchema);

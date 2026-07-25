@@ -10,7 +10,8 @@ const {
     createNotification,
     markNotificationAsRead,
     markAllNotificationsAsRead,
-    deleteNotification
+    deleteNotification,
+    createNotificationBuik
 } = require('./notification.controller');
 const { protect } = require('../../middleware/auth.middleware');
 
@@ -19,5 +20,7 @@ router.post('/', protect, createNotification);
 router.patch('/read-all', protect, markAllNotificationsAsRead);
 router.patch('/:id/read', protect, markNotificationAsRead);
 router.delete('/:id', protect, deleteNotification);
+
+router.post('/:projectId/bulk', protect, createNotificationBuik)
 
 module.exports = router;

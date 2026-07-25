@@ -17,7 +17,7 @@ const create = (data) => {
 };
 
 const update = (id, data) => {
-    return Label.findByIdAndUpdate(id, data, { new: true });
+    return Label.findByIdAndUpdate(id, { $set: data }, { new: true });
 };
 
 const remove = (id) => {

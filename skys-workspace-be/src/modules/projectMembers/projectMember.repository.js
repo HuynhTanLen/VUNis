@@ -24,12 +24,20 @@ const create = async (data) => {
 };
 
 const updateRole = (id, role) => {
-    return ProjectMember.findByIdAndUpdate(id, { role }, { new: true }).populate('user', 'name email');
+    return ProjectMember.findByIdAndUpdate(id, {$set: { role }}, { new: true }).populate('user', 'name email');
 };
 
 const remove = (id) => {
     return ProjectMember.findByIdAndDelete(id);
 };
+
+const findByRoles = (projectId, rolesArray) =>{
+    if(!rolesArray || rolesArray.length == 0){
+        return ProjectMember.find({project:projectId}).populate('user', 'name email avatar').sort({joinedAt: -1})
+    }
+
+    return ProjectMember.find({project: projectId, role: {$in: rolesArray}}).populate('user', 'name email avatar').sort({joinedAt: -1})
+}
 
 module.exports = {
     findByProjectId,
@@ -37,5 +45,6 @@ module.exports = {
     findById,
     create,
     updateRole,
-    remove
+    remove,
+    findByRoles
 };

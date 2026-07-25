@@ -13,7 +13,8 @@ const labelSchema = new mongoose.Schema({
     },
     color: {
         type: String,
-        default: '#6366f1' // Indigo default color code
+        default: '#6366f1', // Indigo default color code
+        trim: true
     },
     project: {
         type: mongoose.Schema.Types.ObjectId,

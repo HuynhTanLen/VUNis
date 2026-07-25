@@ -19,7 +19,7 @@ const {
     
 } = require('./project.controller');
 const { protect } = require('../../middleware/auth.middleware');
-const { authorize } = require('../../middleware/rbac.middleware');
+const { authorize, checkProjectPermission } = require('../../middleware/rbac.middleware');
 
 router.use(protect);
 
@@ -36,12 +36,12 @@ router.get('/admin/all', authorize('SUPER_ADMIN', 'SERVICE_ADMIN'), getAllProjec
 router.delete('/admin/:id', authorize('SUPER_ADMIN', 'SERVICE_ADMIN'), deleteProjectAdmin);
 
 router.route('/:id/members')
-    .get(getProjectMembers)
-    .post(addProjectMember);
+    .get(checkProjectPermission(), getProjectMembers)
+    .post(checkProjectPermission('PROJECT_MANAGER'), addProjectMember);
 
 router.route('/:id')
-    .put(updateProject)
-    .delete(deleteProject);
+    .put(checkProjectPermission('PROJECT_MANAGER'), updateProject)
+    .delete(checkProjectPermission('PROJECT_MANAGER'), deleteProject);
 
 module.exports = router;
 

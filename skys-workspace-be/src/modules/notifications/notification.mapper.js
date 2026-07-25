@@ -10,7 +10,7 @@ const toNotificationResponse = (notif) => {
         id: notif._id,
         message: notif.message,
         type: notif.type,
-        receiver: notif.receiver && typeof notif.receiver === 'object' ? {
+        receiver: notif.receiver && typeof notif.receiver === 'object' && notif.receiver._id ? {
             id: notif.receiver._id,
             name: notif.receiver.name,
             email: notif.receiver.email

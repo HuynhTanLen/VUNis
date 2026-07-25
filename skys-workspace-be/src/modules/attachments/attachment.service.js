@@ -18,6 +18,11 @@ const getByTask = async (taskId) => {
     return attMapper.toAttachmentListResponse(list);
 };
 
+const getAllByTask = async() =>{
+    const list = await attRepo.findAll();
+    return list;
+}
+
 const createAttachment = async (dto, uploaderId) => {
     const taskExists = await Task.findById(dto.taskId);
     if (!taskExists) {
@@ -45,8 +50,16 @@ const removeAttachment = async (id) => {
     return { message: 'Đã xóa tài liệu đính kèm thành công' };
 };
 
+const editAttachment = async(id, data) => {
+    const att = await attRepo.findById(id);
+    if (!att) throw new AttachmentNotFoundError();
+    const updatedAtt = await attRepo.edit(id, data);
+    return attMapper.toAttachmentResponse(updatedAtt);
+}
+
 module.exports = {
     getByTask,
     createAttachment,
-    removeAttachment
+    removeAttachment,
+    editAttachment
 };

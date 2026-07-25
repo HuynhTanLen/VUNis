@@ -18,8 +18,28 @@ const projectMemberSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ['Project Manager', 'Team Lead', 'Developer', 'Designer', 'QA Tester', 'Guest'],
-        default: 'Developer'
+        enum: [
+            'PROJECT_MANAGER',
+
+            'FRONTEND_LEAD',
+            'FRONTEND_MEMBER',
+
+            'BACKEND_LEAD',
+            'BACKEND_MEMBER',
+
+            'QA_LEAD',
+            'QA_TESTER',
+
+            'DEVOPS_LEAD',
+            'DEVOPS_MEMBER',
+
+            'DESIGNER_LEAD',
+            'DESIGNER-MEMBER',
+
+            'BUSINESS-ANALYST',
+            'MEMBER'
+        ],
+        default: 'MEMBER'
     },
     status: {
         type: String,

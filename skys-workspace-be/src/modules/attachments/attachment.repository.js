@@ -23,9 +23,15 @@ const remove = (id) => {
     return Attachment.findByIdAndDelete(id);
 };
 
+const edit = (id, data) =>{
+    return Attachment.findByIdAndUpdate(id, {$set: data}, {new: true})
+    .populate('uploader', 'name email')
+}
+
 module.exports = {
     findByTaskId,
     findById,
     create,
-    remove
+    remove,
+    edit
 };
