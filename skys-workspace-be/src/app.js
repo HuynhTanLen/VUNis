@@ -23,8 +23,6 @@ const activityLogRoutes = require('./modules/activityLogs/activityLog.route');
 const attachmentRoutes = require('./modules/attachments/attachment.route');
 const labelRoutes = require('./modules/labels/label.route');
 const projectMemberRoutes = require('./modules/projectMembers/projectMember.route');
-const permissionRoutes = require('./modules/permissions/permission.route');
-const roleRoutes = require('./modules/roles/role.route');
 
 const app = express();
 
@@ -52,15 +50,13 @@ app.use('/api/activity-logs', activityLogRoutes);
 app.use('/api/attachments', attachmentRoutes);
 app.use('/api/labels', labelRoutes);
 app.use('/api/project-members', projectMemberRoutes);
-app.use('/api/permissions', permissionRoutes);
-app.use('/api/roles', roleRoutes);
 
 
 // ─── Health & System Stats ─────────────────────────
 app.get('/api/health', (req, res) => {
     res.json({
         status: 'OK',
-        message: 'Skys Platform API is running',
+        message: 'KS Platform API is running',
         timestamp: new Date().toISOString()
     });
 });

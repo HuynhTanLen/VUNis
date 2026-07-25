@@ -30,7 +30,7 @@ class RegisterDTO {
 
 class LoginDTO {
     constructor(body) {
-        this.email = body.name ? body.email.toLowerCase().trim() : '';
+        this.email = body.email ? body.email.toLowerCase().trim() : '';
         this.password = body.password ? body.password : '';
     }
 

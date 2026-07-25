@@ -11,6 +11,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const env = require('../../config/env');
 const User = require('./auth.schema');
+const sendEmail = require('../../shared/utils/sendEmail');
 
 /**
  * Đăng ký tài khoản mới.
@@ -189,43 +190,58 @@ const removeUser = async (currentUserId, targetUserId) => {
 
 const forgotPassword = async (email) => {
     const user = await authRepo.findByEmail(email);
-    if (!user) throw new UserNotFoundError();
+    if (!user) {
 
-    const resetToken = Math.floor(100000 + Math.random() * 900000).toString();
-    user.resetPasswordToken = resetToken;
-    user.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
+        const resetToken = Math.floor(100000 + Math.random() * 900000).toString();
+        
+        user.resetPasswordToken = crypto.createHasg('sha256').update(resetOTP).digest('hex');
+        user.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
 
-    await user.save();
+        await user.save();
 
-    console.log(`\n==================================================`);
-    console.log(`[QUÊN MẬT KHẨU] Mã OTP khôi phục cho ${email}: ${resetToken}`);
-    console.log(`==================================================\n`);
+        const htmlContent = `
+        <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f5;">
+                <h2 style="color: #2563eb;">KS TEAM WORKSPACE — Mã Khôi Phục Mật Khẩu</h2>
+                <p>Xin chào <b>${user.name || 'bạn'}</b>,</p>
+                <p>Mã OTP để khôi phục mật khẩu của bạn là:</p>
+                <h1 style="color: #ef4444; letter-spacing: 5px;">${resetOTP}</h1>
+                <p>Mã này có hiệu lực trong vòng <b>10 phút</b>. Vui lòng không chia sẻ mã này cho bất kỳ ai.</p>
+        </div>
+        `;
 
+        await sendEmail({
+            email: user.email,
+            subject: 'Mã OTP khôi phục mật khẩu - KS Team',
+            html: htmlContent
+        })
+
+    }
     return {
-        message: 'Mã OTP khôi phục mật khẩu đã được gửi, vui lòng kiểm tra email của bạn (hoặc console server)',
-        resetToken
+        message: 'Mã OTP khôi phục mật khẩu đã được gửi, vui lòng kiểm tra email của bạn (hoặc console server)'
     };
 };
 
 const resetPassword = async (email, token, newPassword) => {
     const user = await authRepo.findByEmail(email);
-    if (!user) throw new UserNotFoundError();
-
-    if (!user.resetPasswordToken || user.resetPasswordToken !== token || user.resetPasswordExpire < Date.now()) {
+    if (!user) {
         const error = new Error('Mã OTP không hợp lệ hoặc đã hết hạn');
         error.statusCode = 400;
         throw error;
     }
 
+    const hashedOTP = crypto.createHasg('sha256').update(resetOTP).digest('hex');
+     if (!user.resetPasswordToken || user.resetPasswordToken !== hashedOTP || user.resetPasswordExpire < Date.now()) {
+        const error = new Error('Mã OTP không hợp lệ hoặc đã hết hạn');
+        error.statusCode = 400;
+        throw error;
+    }
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(newPassword, salt);
+    user.password = await bcrypt.hash(newPassword, salt);
 
-    user.password = hashedPassword;
     user.resetPasswordToken = null;
     user.resetPasswordExpire = null;
 
     await user.save();
-
     return { message: 'Thay đổi mật khẩu thành công' };
 };
 

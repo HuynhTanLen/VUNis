@@ -45,7 +45,7 @@ const create = async (dto, userId) => {
     await ProjectMember.create({
         user: userId,
         project: newProject._id,
-        role: 'Project Manager',
+        role: 'PROJECT_MANAGER',
         status: 'accepted'
     });
 

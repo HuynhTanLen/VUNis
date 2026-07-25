@@ -25,11 +25,18 @@ const projectSchema = new mongoose.Schema({
                enum:[
                 'PROJECT_MANAGER', 
                 'FRONTEND_LEAD', 
+                'FRONTEND_DEVELOPER',
                 'BACKEND_LEAD', 
+                'BACKEND_DEVELOPER',
                 'DESIGN_LEAD', 
+                'UI_UX_DESIGNER',
                 'QA_LEAD', 
+                'QA_TESTER',
+                'DEVOPS_LEAD',
+                'DEVOPS_ENGINEER',
                 'DEVELOPER', 
-                'TESTER'
+                'TESTER',
+                'MEMBER'
                ]}
     }],
     department:{type: String, default: 'Engineering'},

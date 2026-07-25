@@ -12,7 +12,7 @@ dotenv.config({ path: path.join(__dirname, '..', '..', '.env') });
 
 const env = {
     PORT: process.env.PORT || 5000,
-    MONGO_URI: process.env.MONGO_URI || 'mongodb://localhost:27017/skys_platform',
+    MONGO_URI: process.env.MONGO_URI || 'mongodb://localhost:27017/ks_platform',
     JWT_SECRET: process.env.JWT_SECRET || 'default_secret_change_me',
     NODE_ENV: process.env.NODE_ENV || 'development',
 };

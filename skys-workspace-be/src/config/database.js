@@ -27,7 +27,7 @@ const seedDefaultData = async () => {
         const User = require('../modules/auth/auth.schema');
         const bcrypt = require('bcryptjs');
 
-        const adminEmail = process.env.ADMIN_EMAIL || 'admin@skys.com';
+        const adminEmail = process.env.ADMIN_EMAIL || 'admin@ks.com';
         const adminPassword = process.env.ADMIN_PASSWORD || 'Admin@123';
 
         const adminExists = await User.findOne({ email: adminEmail });

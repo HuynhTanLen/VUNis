@@ -9,7 +9,7 @@ const toUserResponse = (user) => ({
     phone: user.phone || null,
     jobTitle: user.jobTitle || 'Software Engineer',
     department: user.department || 'Engineering',
-    company: user.company || 'Skys Organization',
+    company: user.company || 'KS Organization',
     lastActiveAt: user.lastActiveAt || user.updatedAt,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt
