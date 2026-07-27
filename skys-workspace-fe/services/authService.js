@@ -16,22 +16,22 @@ export const getMe = async () => {
 }
 
 export const getAllUsers = async () => {
-    const response = await api.get('/auth/users');
+    const response = await api.get('/users');
     return response.data;
 }
 
 export const updateUserRole = async (userId, role) => {
-    const response = await api.put(`/auth/users/${userId}/role`, { role });
+    const response = await api.patch(`/users/${userId}/role`, { role });
     return response.data;
 }
 
 export const updateUserStatus = async (userId, status) => {
-    const response = await api.put(`/auth/users/${userId}/status`, { status });
+    const response = await api.patch(`/users/${userId}/block`, { status });
     return response.data;
 }
 
 export const deleteUser = async (userId) => {
-    const response = await api.delete(`/auth/users/${userId}`);
+    const response = await api.delete(`/users/${userId}`);
     return response.data;
 }
 

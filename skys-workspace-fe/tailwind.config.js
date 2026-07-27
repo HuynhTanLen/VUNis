@@ -10,8 +10,18 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['var(--font-inter)', 'system-ui', '-apple-system', 'sans-serif'],
+        sans: ['Inter', 'Plus Jakarta Sans', 'system-ui', 'sans-serif'],
       },
+      colors: {
+        // Tông màu chủ đạo Enterprise
+        brand: {
+          50: '#eef2ff',
+          100: '#e0e7ff',
+          500: '#6366f1',
+          600: '#4f46e5', // Màu Indigo chủ đạo
+          700: '#4338ca',
+        }
+      }
     },
   },
   plugins: [],

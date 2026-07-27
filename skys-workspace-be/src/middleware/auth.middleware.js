@@ -5,7 +5,7 @@
  */
 const jwt = require('jsonwebtoken');
 const env = require('../config/env');
-const User = require('../modules/auth/auth.schema');
+const User = require('../modules/users/user.schema');
 
 /**
  * Middleware: Yêu cầu đăng nhập (protect)

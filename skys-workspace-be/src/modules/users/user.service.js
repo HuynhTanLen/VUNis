@@ -15,7 +15,7 @@ const getAllUsers = async (queryFilter = {}) => {
     if (queryFilter.isBlocked !== undefined) filter.isBlocked = queryFilter.isBlocked === 'true';
 
     const users = await userRepo.findAllUsers(filter);
-    return userMapper.toUserResponse(users);
+    return userMapper.toUserListResponse(users);
 };
 
 const getUserById = async (userId) => {
