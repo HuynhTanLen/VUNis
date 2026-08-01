@@ -27,8 +27,8 @@ export const AuthProvider = ({ children }) => {
         return data;
     };
 
-    const register = async (name, email, password) => {
-        const data = await registerAPI({ name, email, password });
+    const register = async (payload) => {
+        const data = await registerAPI(typeof payload === 'object' ? payload : { name: arguments[0], email: arguments[1], password: arguments[2] });
         return data;
     };
 

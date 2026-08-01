@@ -11,6 +11,10 @@ class RegisterDTO {
         this.name = body.name ? body.name.trim() : '';
         this.email = body.email ? body.email.toLowerCase().trim() : '';
         this.password = body.password ? body.password : '';
+        this.phone = body.phone ? body.phone.trim() : null;
+        this.jobTitle = body.jobTitle ? body.jobTitle.trim() : null;
+        this.department = body.department ? body.department.trim() : null;
+        this.company = body.company ? body.company.trim() : null;
     }
 
     validate() {

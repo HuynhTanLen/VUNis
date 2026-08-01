@@ -1,36 +1,53 @@
 /**
  * @file comment.repository.js
  * @description Tầng Repository cho module Comment.
- * Chứa tất cả các truy vấn trực tiếp tới Database MongoDB qua Mongoose.
+ * Chứa tất cả các truy vấn trực tiếp tới Database qua Prisma.
  */
-const Comment = require('./comment.schema');
+const prisma = require('../../config/prisma');
 
 const findCommentByTaskId = (taskId) => {
-    return Comment.find({ taskId: taskId })
-        .populate('userId', 'name email avatar')
-        .sort({ createdAt: -1 });
+    return prisma.comment.findMany({
+        where: { taskId: taskId },
+        include: {
+            author: { select: { id: true, name: true, email: true, avatar: true } }
+        },
+        orderBy: { createdAt: 'desc' }
+    });
 };
 
 const findById = (commentId) => {
-    return Comment.findById(commentId)
-        .populate('userId', 'name email avatar');
+    return prisma.comment.findUnique({
+        where: { id: commentId },
+        include: {
+            author: { select: { id: true, name: true, email: true, avatar: true } }
+        }
+    });
 };
 
 const createComment = async (data) => {
-    const newComment = await Comment.create(data);
-    return Comment.findById(newComment._id).populate('userId', 'name email avatar');
+    const newComment = await prisma.comment.create({ data });
+    return prisma.comment.findUnique({
+        where: { id: newComment.id },
+        include: {
+            author: { select: { id: true, name: true, email: true, avatar: true } }
+        }
+    });
 };
 
 const update = (commentId, content) => {
-    return Comment.findByIdAndUpdate(
-        commentId,
-        {$set: {content} },
-        { new: true }
-    ).populate('userId', 'name email avatar');
+    return prisma.comment.update({
+        where: { id: commentId },
+        data: { content },
+        include: {
+            author: { select: { id: true, name: true, email: true, avatar: true } }
+        }
+    });
 };
 
 const removeComment = (commentId) => {
-    return Comment.findByIdAndDelete(commentId);
+    return prisma.comment.delete({
+        where: { id: commentId }
+    });
 };
 
 module.exports = {

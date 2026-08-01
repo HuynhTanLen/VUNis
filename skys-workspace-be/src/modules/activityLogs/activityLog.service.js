@@ -4,11 +4,11 @@
  */
 const logRepo = require('./activityLog.repository');
 const logMapper = require('./activityLog.mapper');
-const Project = require('../projects/project.schema');
+const prisma = require('../../config/prisma');
 const { NotFoundError } = require('../../shared/errors/AppError');
 
 const getLogsByProject = async (projectId) => {
-    const projectExists = await Project.findById(projectId);
+    const projectExists = await prisma.project.findUnique({ where: { id: projectId } });
     if (!projectExists) {
         throw new NotFoundError('Dự án');
     }
@@ -18,16 +18,16 @@ const getLogsByProject = async (projectId) => {
 };
 
 const createLog = async (dto, userId) => {
-    const projectExists = await Project.findById(dto.projectId);
+    const projectExists = await prisma.project.findUnique({ where: { id: dto.projectId } });
     if (!projectExists) {
         throw new NotFoundError('Dự án');
     }
 
     const newLog = await logRepo.create({
         action: dto.action,
-        type: dto.type,
-        user: userId,
-        project: dto.projectId
+        details: dto.details || dto.type || '',
+        userId: userId,
+        projectId: dto.projectId
     });
 
     return logMapper.toActivityLogResponse(newLog);

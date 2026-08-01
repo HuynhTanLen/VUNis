@@ -5,47 +5,67 @@
 const memberRepo = require('./projectMember.repository');
 const memberMapper = require('./projectMember.mapper');
 const { ProjectMemberNotFoundError } = require('./projectMember.error');
-const Project = require('../projects/project.schema');
-const User = require('../auth/auth.schema');
+const prisma = require('../../config/prisma');
 const { NotFoundError, ConflictError } = require('../../shared/errors/AppError');
 const {getRolesByTeamType} = require('../../shared/constants/teamRoles');
 const sendEmail = require('../../shared/utils/sendEmail');
-const Notification = require('../notifications/notification.schema');
 
 const getMembersByProject = async (projectId) => {
-    const projectExists = await Project.findById(projectId);
-    if (!projectExists) throw new NotFoundError('Dự án');
+    const project = await prisma.project.findUnique({
+        where: { id: projectId },
+        include: { owner: { select: { id: true, name: true, email: true, avatar: true } } }
+    });
+    if (!project) throw new NotFoundError('Dự án');
 
-    const members = await memberRepo.findByProjectId(projectId);
+    let members = await memberRepo.findByProjectId(projectId);
+
+    if (project.owner) {
+        const ownerInMembers = members.some(m => (m.userId === project.owner.id || (m.user && m.user.id === project.owner.id)));
+        if (!ownerInMembers) {
+            members.unshift({
+                id: `owner-${project.owner.id}`,
+                userId: project.owner.id,
+                projectId: project.id,
+                role: 'PROJECT_MANAGER',
+                status: 'accepted',
+                user: project.owner,
+                joinedAt: project.createdAt
+            });
+        }
+    }
+
     return memberMapper.toProjectMemberListResponse(members);
 };
 
 const addMemberToProject = async (dto) => {
-    const projectExists = await Project.findById(dto.projectId);
+    const projectExists = await prisma.project.findUnique({ where: { id: dto.projectId } });
     if (!projectExists) throw new NotFoundError('Dự án');
 
-    const targetUser = await User.findOne({ email: dto.email });
+    const targetUser = await prisma.user.findUnique({ where: { email: dto.email } });
     if (!targetUser) throw new NotFoundError(`Người dùng có email "${dto.email}"`);
 
-    const existingMember = await memberRepo.findByUserAndProject(targetUser._id, dto.projectId);
+    const existingMember = await memberRepo.findByUserAndProject(targetUser.id, dto.projectId);
     if (existingMember) {
         throw new ConflictError('Thành viên này đã tham gia vào dự án');
     }
 
     const member = await memberRepo.create({
-        user: targetUser._id,
-        project: dto.projectId,
+        userId: targetUser.id,
+        projectId: dto.projectId,
         role: dto.role || 'MEMBER',
         status: 'accepted'
     });
 
-    await Notification.create({
-         message: `Bạn vừa được thêm vào dự án "${projectExists.name}" với vai trò ${member.role}.`,
-        type: 'project_invitation',
-        receiver: targetUser._id,
-        relatedProject: dto.projectId
-    })
-     try {
+    await prisma.notification.create({
+        data: {
+            title: 'Lời mời dự án',
+            message: `Bạn vừa được thêm vào dự án "${projectExists.name}" với vai trò ${member.role}.`,
+            receiverId: targetUser.id,
+            link: `/projects/${dto.projectId}`
+        }
+    });
+    
+    try {
         const emailHtml = `
             <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f8fafc; border-radius: 8px;">
                 <h2 style="color: #2563eb;">🎉 Chào mừng bạn đến với dự án "${projectExists.name}"!</h2>
@@ -89,18 +109,18 @@ const removeMember = async (id) => {
 };
 
 const getTeamMembers = async(projectId, teamType) => {
-    const projectExists = await Project.findById(projectId);
+    const projectExists = await prisma.project.findUnique({ where: { id: projectId } });
     if(!projectExists) throw new NotFoundError('Dự án');
-    const rolesArray = getRolesByTeamType(teamType)
-    const member = await memberRepo.findByRoles(
-        projectId, rolesArray)
+    
+    const rolesArray = getRolesByTeamType(teamType);
+    const members = await memberRepo.findByRoles(projectId, rolesArray);
 
     return {
         teamType: teamType || 'ALL',
         teamSize: members.length,
         members: memberMapper.toProjectMemberListResponse(members)
-    }
-}
+    };
+};
 
 module.exports = {
     getMembersByProject,

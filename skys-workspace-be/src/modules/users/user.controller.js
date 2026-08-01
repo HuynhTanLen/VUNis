@@ -4,8 +4,14 @@
  */
 const userService = require('./user.service');
 const { UpdateProfileDTO, ChangeRoleDTO, ToggleBlockDTO } = require('./user.dto');
-const User = require('./user.schema');
 const asyncHandler = require('../../shared/asyncHandler');
+
+// System roles constant (replaces User.ADMIN_ROLES from Mongoose schema)
+const SYSTEM_ROLES = {
+    SUPER_ADMIN: 'SUPER_ADMIN', USER_ADMIN: 'USER_ADMIN',
+    GROUPS_ADMIN: 'GROUPS_ADMIN', SERVICE_ADMIN: 'SERVICE_ADMIN',
+    HELP_DESK_ADMIN: 'HELP_DESK_ADMIN', USER: 'USER'
+};
 
 const getUsers = asyncHandler(async (req, res) => {
     const users = await userService.getAllUsers(req.query);
@@ -19,22 +25,22 @@ const getUserById = asyncHandler(async (req, res) => {
 
 const updateProfile = asyncHandler(async (req, res) => {
     const dto = new UpdateProfileDTO(req.body).validate();
-    const currentUserId = req.user._id || req.user.userId;
+    const currentUserId = req.user.id || req.user.userId;
     const user = await userService.updateProfile(currentUserId, req.params.id, dto);
     res.json({ message: 'Cập nhật thông tin thành công', user });
 });
 
 const changeRole = asyncHandler(async (req, res) => {
-    const validRoles = Object.values(User.ADMIN_ROLES);
+    const validRoles = Object.values(SYSTEM_ROLES);
     const dto = new ChangeRoleDTO(req.body).validate(validRoles);
-    const currentUserId = req.user._id || req.user.userId;
+    const currentUserId = req.user.id || req.user.userId;
     const user = await userService.changeUserRole(currentUserId, req.params.id, dto.role);
     res.json({ message: 'Cập nhật vai trò Admin thành công', user });
 });
 
 const toggleBlock = asyncHandler(async (req, res) => {
     const dto = new ToggleBlockDTO(req.body).validate();
-    const currentUserId = req.user._id || req.user.userId;
+    const currentUserId = req.user.id || req.user.userId;
     const user = await userService.toggleBlockUser(currentUserId, req.params.id, dto.isBlocked);
     res.json({
         message: dto.isBlocked ? 'Khóa tài khoản người dùng thành công' : 'Mở khóa tài khoản thành công',
@@ -43,7 +49,7 @@ const toggleBlock = asyncHandler(async (req, res) => {
 });
 
 const deleteUser = asyncHandler(async (req, res) => {
-    const currentUserId = req.user._id || req.user.userId;
+    const currentUserId = req.user.id || req.user.userId;
     const result = await userService.removeUser(currentUserId, req.params.id);
     res.json(result);
 });

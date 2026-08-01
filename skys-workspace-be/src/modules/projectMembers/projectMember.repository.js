@@ -2,42 +2,61 @@
  * @file projectMember.repository.js
  * @description Tầng Repository cho module ProjectMember.
  */
-const ProjectMember = require('./projectMember.schema');
+const prisma = require('../../config/prisma');
 
 const findByProjectId = (projectId) => {
-    return ProjectMember.find({ project: projectId })
-        .populate('user', 'name email')
-        .sort({ joinedAt: -1 });
+    return prisma.projectMember.findMany({
+        where: { projectId },
+        include: { user: { select: { id: true, name: true, email: true, avatar: true } } },
+        orderBy: { joinedAt: 'desc' }
+    });
 };
 
 const findByUserAndProject = (userId, projectId) => {
-    return ProjectMember.findOne({ user: userId, project: projectId });
+    return prisma.projectMember.findFirst({
+        where: { userId, projectId },
+        include: { user: { select: { id: true, name: true, email: true, avatar: true } } }
+    });
 };
 
 const findById = (id) => {
-    return ProjectMember.findById(id).populate('user', 'name email');
+    return prisma.projectMember.findUnique({
+        where: { id },
+        include: { user: { select: { id: true, name: true, email: true, avatar: true } } }
+    });
 };
 
 const create = async (data) => {
-    const member = await ProjectMember.create(data);
-    return ProjectMember.findById(member._id).populate('user', 'name email');
+    return prisma.projectMember.create({
+        data,
+        include: { user: { select: { id: true, name: true, email: true, avatar: true } } }
+    });
 };
 
 const updateRole = (id, role) => {
-    return ProjectMember.findByIdAndUpdate(id, {$set: { role }}, { new: true }).populate('user', 'name email');
+    return prisma.projectMember.update({
+        where: { id },
+        data: { role },
+        include: { user: { select: { id: true, name: true, email: true, avatar: true } } }
+    });
 };
 
 const remove = (id) => {
-    return ProjectMember.findByIdAndDelete(id);
+    return prisma.projectMember.delete({ where: { id } });
 };
 
-const findByRoles = (projectId, rolesArray) =>{
-    if(!rolesArray || rolesArray.length == 0){
-        return ProjectMember.find({project:projectId}).populate('user', 'name email avatar').sort({joinedAt: -1})
+const findByRoles = (projectId, rolesArray) => {
+    const whereClause = { projectId };
+    if (rolesArray && rolesArray.length > 0) {
+        whereClause.role = { in: rolesArray };
     }
-
-    return ProjectMember.find({project: projectId, role: {$in: rolesArray}}).populate('user', 'name email avatar').sort({joinedAt: -1})
-}
+    
+    return prisma.projectMember.findMany({
+        where: whereClause,
+        include: { user: { select: { id: true, name: true, email: true, avatar: true } } },
+        orderBy: { joinedAt: 'desc' }
+    });
+};
 
 module.exports = {
     findByProjectId,

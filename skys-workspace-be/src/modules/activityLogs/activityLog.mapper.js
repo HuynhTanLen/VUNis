@@ -7,15 +7,15 @@ const toActivityLogResponse = (log) => {
     if (!log) return null;
 
     return {
-        id: log._id,
+        id: log.id,
         action: log.action,
-        type: log.type,
-        user: log.user && typeof log.user === 'object' && log.user._id ? {
-            id: log.user._id,
+        type: log.details || log.type,
+        user: log.user && typeof log.user === 'object' && log.user.id ? {
+            id: log.user.id,
             name: log.user.name,
             email: log.user.email
         } : log.user,
-        projectId: log.project?._id || log.project,
+        projectId: log.projectId || log.project,
         createdAt: log.createdAt
     };
 };

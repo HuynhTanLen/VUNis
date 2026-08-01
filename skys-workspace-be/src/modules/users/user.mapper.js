@@ -1,14 +1,10 @@
 /**
  * @file user.mapper.js
- * @description Format dữ liệu User Response DTO cho Client.
- * Quy tắc Online tuyệt đối:
- * Chỉ tài khoản nào đang có user.status === 'online' VÀ lastActiveAt < 5 phút mới tính là isOnline: true.
- * Tất cả tài khoản khác mặc định là isOnline: false (Offline).
+ * @description Format dữ liệu User Response DTO cho Client (Hỗ trợ PostgreSQL & Prisma).
  */
 
 const checkIsOnline = (user) => {
-    // Nếu DB không ghi nhận status === 'online' -> Chắc chắn 100% là Offline
-    if (user.status !== 'online') return false;
+    if (!user || user.status !== 'online') return false;
     if (!user.lastActiveAt) return false;
 
     const lastActive = new Date(user.lastActiveAt).getTime();
@@ -19,10 +15,11 @@ const checkIsOnline = (user) => {
 };
 
 const toUserResponse = (user) => {
+    if (!user) return null;
     const isSuspended = Boolean(user.isBlocked || user.status === 'suspended');
 
     return {
-        id: user._id,
+        id: user.id,
         name: user.name,
         email: user.email,
         role: user.role || 'USER',

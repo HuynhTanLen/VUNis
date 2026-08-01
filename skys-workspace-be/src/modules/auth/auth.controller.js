@@ -30,7 +30,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
 const logoutUser = asyncHandler(async (req, res) => {
     if (req.user) {
-        const userId = req.user._id || req.user.userId;
+        const userId = req.user.id || req.user.userId;
         await authService.logout(userId);
     }
     res.clearCookie('token');
@@ -38,7 +38,7 @@ const logoutUser = asyncHandler(async (req, res) => {
 });
 
 const getMe = asyncHandler(async (req, res) => {
-    const userId = req.user._id || req.user.userId;
+    const userId = req.user.id || req.user.userId;
     const user = await authService.getMe(userId);
     res.json(user);
 });
@@ -50,14 +50,14 @@ const getUsers = asyncHandler(async (req, res) => {
 
 const updateRole = asyncHandler(async (req, res) => {
     const { role } = req.body;
-    const currentUserId = req.user._id || req.user.userId;
+    const currentUserId = req.user.id || req.user.userId;
     const user = await authService.changeUserRole(currentUserId, req.params.id, role);
     res.json({ message: 'Cập nhật vai trò Admin thành công', user });
 });
 
 const toggleBlockUser = asyncHandler(async (req, res) => {
     const { isBlocked } = req.body;
-    const currentUserId = req.user._id || req.user.userId;
+    const currentUserId = req.user.id || req.user.userId;
     const user = await authService.toggleBlockUser(currentUserId, req.params.id, isBlocked);
     res.json({
         message: isBlocked ? 'Khóa tài khoản người dùng thành công' : 'Mở khóa tài khoản thành công',
@@ -71,7 +71,7 @@ const getRoles = asyncHandler(async (req, res) => {
 });
 
 const deleteUser = asyncHandler(async (req, res) => {
-    const currentUserId = req.user._id || req.user.userId;
+    const currentUserId = req.user.id || req.user.userId;
     const result = await authService.removeUser(currentUserId, req.params.id);
     res.json(result);
 });

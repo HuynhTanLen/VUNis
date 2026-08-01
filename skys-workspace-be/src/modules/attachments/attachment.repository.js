@@ -2,36 +2,62 @@
  * @file attachment.repository.js
  * @description Repository layer cho module Attachment.
  */
-const Attachment = require('./attachment.schema');
+const prisma = require('../../config/prisma');
 
 const findByTaskId = (taskId) => {
-    return Attachment.find({ task: taskId })
-        .populate('uploader', 'name email')
-        .sort({ createdAt: -1 });
+    return prisma.attachment.findMany({
+        where: { taskId: taskId },
+        include: {
+            uploader: { select: { id: true, name: true, email: true } }
+        },
+        orderBy: { createdAt: 'desc' }
+    });
 };
 
 const findById = (id) => {
-    return Attachment.findById(id).populate('uploader', 'name email');
+    return prisma.attachment.findUnique({
+        where: { id },
+        include: {
+            uploader: { select: { id: true, name: true, email: true } }
+        }
+    });
 };
 
 const create = async (data) => {
-    const newAtt = await Attachment.create(data);
-    return Attachment.findById(newAtt._id).populate('uploader', 'name email');
+    const newAtt = await prisma.attachment.create({ data });
+    return prisma.attachment.findUnique({
+        where: { id: newAtt.id },
+        include: {
+            uploader: { select: { id: true, name: true, email: true } }
+        }
+    });
 };
 
 const remove = (id) => {
-    return Attachment.findByIdAndDelete(id);
+    return prisma.attachment.delete({
+        where: { id }
+    });
 };
 
-const edit = (id, data) =>{
-    return Attachment.findByIdAndUpdate(id, {$set: data}, {new: true})
-    .populate('uploader', 'name email')
-}
+const edit = (id, data) => {
+    return prisma.attachment.update({
+        where: { id },
+        data,
+        include: {
+            uploader: { select: { id: true, name: true, email: true } }
+        }
+    });
+};
+
+const findAll = () => {
+    return prisma.attachment.findMany();
+};
 
 module.exports = {
     findByTaskId,
     findById,
     create,
     remove,
-    edit
+    edit,
+    findAll
 };

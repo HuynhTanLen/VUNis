@@ -2,26 +2,32 @@
  * @file label.repository.js
  * @description Tầng Repository cho module Label.
  */
-const Label = require('./label.schema');
+const prisma = require('../../config/prisma');
 
 const findByProjectId = (projectId) => {
-    return Label.find({ project: projectId }).sort({ name: 1 });
+    return prisma.label.findMany({
+        where: { projectId },
+        orderBy: { name: 'asc' }
+    });
 };
 
 const findById = (id) => {
-    return Label.findById(id);
+    return prisma.label.findUnique({ where: { id } });
 };
 
 const create = (data) => {
-    return Label.create(data);
+    return prisma.label.create({ data });
 };
 
 const update = (id, data) => {
-    return Label.findByIdAndUpdate(id, { $set: data }, { new: true });
+    return prisma.label.update({
+        where: { id },
+        data
+    });
 };
 
 const remove = (id) => {
-    return Label.findByIdAndDelete(id);
+    return prisma.label.delete({ where: { id } });
 };
 
 module.exports = {

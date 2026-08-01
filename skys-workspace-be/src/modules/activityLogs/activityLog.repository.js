@@ -2,18 +2,27 @@
  * @file activityLog.repository.js
  * @description Tầng Repository cho module ActivityLog.
  */
-const ActivityLog = require('./activityLog.schema');
+const prisma = require('../../config/prisma');
 
 const findByProjectId = (projectId) => {
-    return ActivityLog.find({ project: projectId })
-        .populate('user', 'name email')
-        .sort({ createdAt: -1 })
-        .limit(100);
+    return prisma.activityLog.findMany({
+        where: { projectId: projectId },
+        include: {
+            user: { select: { id: true, name: true, email: true } }
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 100
+    });
 };
 
 const create = async (data) => {
-    const newLog = await ActivityLog.create(data);
-    return ActivityLog.findById(newLog._id).populate('user', 'name email');
+    const newLog = await prisma.activityLog.create({ data });
+    return prisma.activityLog.findUnique({
+        where: { id: newLog.id },
+        include: {
+            user: { select: { id: true, name: true, email: true } }
+        }
+    });
 };
 
 module.exports = {

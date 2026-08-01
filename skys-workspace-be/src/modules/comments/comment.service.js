@@ -6,11 +6,11 @@
 const commentRepo = require('./comment.repository');
 const commentMapper = require('./comment.mapper');
 const { CommentNotFoundError, CommentPermissionError } = require('./comment.error');
-const Task = require('../tasks/task.schema');
+const prisma = require('../../config/prisma');
 const { NotFoundError } = require('../../shared/errors/AppError');
 
 const getCommentByTask = async (taskId) => {
-    const taskExists = await Task.findById(taskId);
+    const taskExists = await prisma.task.findUnique({ where: { id: taskId } });
     if (!taskExists) {
         throw new NotFoundError('Công việc');
     }
@@ -20,7 +20,7 @@ const getCommentByTask = async (taskId) => {
 };
 
 const create = async (dto, userId) => {
-    const taskExists = await Task.findById(dto.taskId);
+    const taskExists = await prisma.task.findUnique({ where: { id: dto.taskId } });
     if (!taskExists) {
         throw new NotFoundError('Công việc');
     }
@@ -28,7 +28,7 @@ const create = async (dto, userId) => {
     const newComment = await commentRepo.createComment({
         content: dto.content,
         taskId: dto.taskId,
-        userId: userId,
+        authorId: userId,
         parentId: dto.parentId || null
     });
 
@@ -41,7 +41,7 @@ const update = async (commentId, dto, currentUserId, userRoleName) => {
         throw new CommentNotFoundError();
     }
 
-    const isAuthor = comment.userId?._id?.toString() === currentUserId.toString();
+    const isAuthor = comment.author?.id === currentUserId;
     const isAdmin = userRoleName === 'admin' || userRoleName === 'super_admin';
 
     if (!isAuthor && !isAdmin) {
@@ -58,7 +58,7 @@ const remove = async (commentId, currentUserId, userRoleName) => {
         throw new CommentNotFoundError();
     }
 
-    const isAuthor = comment.userId?._id?.toString() === currentUserId.toString();
+    const isAuthor = comment.author?.id === currentUserId;
     const isAdmin = ['SUPER_ADMIN', 'USER_ADMIN'].includes(userRoleName);
 
     if (!isAuthor && !isAdmin) {

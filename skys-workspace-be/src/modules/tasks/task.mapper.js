@@ -1,23 +1,23 @@
 const toTaskResponse = (task) => {
     if (!task) return null;
     return {
-        id: task._id,
+        id: task.id,
         title: task.title,
         status: task.status,
         priority: task.priority || 'medium',
         subtasks: Array.isArray(task.subtasks) ? task.subtasks.map(st => ({
-            id: st._id,
+            id: st.id,
             title: st.title,
             completed: !!st.completed
         })) : [],
         role: task.role,
-        project: task.project,
-        sprint: task.sprint,
-        assignee: task.assignee && typeof task.assignee === 'object' && task.assignee._id ? {
-            id: task.assignee._id,
+        project: task.projectId,
+        sprint: task.sprintId,
+        assignee: task.assignee && typeof task.assignee === 'object' && task.assignee.id ? {
+            id: task.assignee.id,
             name: task.assignee.name,
             email: task.assignee.email
-        } : task.assignee,
+        } : task.assigneeId,
         startDate: task.startDate,
         endDate: task.endDate,
         estimatedCost: task.estimatedCost ? Number(task.estimatedCost.toString()) : 0,

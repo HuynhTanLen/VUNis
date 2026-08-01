@@ -7,13 +7,14 @@ const toCommentResponse = (comment) => {
     if (!comment) return null;
 
     return {
-        id: comment._id,
+        id: comment.id,
         content: comment.content,
-        taskId: comment.task?._id || comment.task,
-        author: comment.author && typeof comment.author === 'object' && comment.author._id ? {
-            id: comment.author._id,
+        taskId: comment.task?.id || comment.taskId || comment.task,
+        author: comment.author && typeof comment.author === 'object' && comment.author.id ? {
+            id: comment.author.id,
             name: comment.author.name,
-            email: comment.author.email
+            email: comment.author.email,
+            avatar: comment.author.avatar
         } : comment.author,
         createdAt: comment.createdAt,
         updatedAt: comment.updatedAt

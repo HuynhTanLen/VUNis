@@ -34,7 +34,17 @@ export const getProjectMembers = async (projectId) => {
     return response.data;
 }
 
-export const addProjectMember = async (projectId, email) => {
-    const response = await api.post(`/projects/${projectId}/members`, { email });
+export const addProjectMember = async (projectId, email, role = 'MEMBER') => {
+    try {
+        const response = await api.post('/project-members', { projectId, email, role });
+        return response.data;
+    } catch {
+        const response = await api.post(`/projects/${projectId}/members`, { email, role });
+        return response.data;
+    }
+}
+
+export const removeProjectMember = async (memberId) => {
+    const response = await api.delete(`/project-members/${memberId}`);
     return response.data;
 }

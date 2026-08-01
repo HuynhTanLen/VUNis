@@ -1,7 +1,7 @@
 const toSprintResponse = (sprint) => {
     if (!sprint) return null;
     return {
-        id: sprint._id,
+        id: sprint.id,
         name: sprint.name,
         startDate: sprint.startDate,
         endDate: sprint.endDate,

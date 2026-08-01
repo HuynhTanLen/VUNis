@@ -1,66 +1,93 @@
-const Task = require('./task.schema');
+const prisma = require('../../config/prisma');
 
 const findTasksByProject = (projectId) => {
-    return Task.find({ projectId })
-        .populate('assigneeId', 'name email avatar')
-        .populate('leadId', 'name email avatar')
-        .sort({ createdAt: -1 });
+    return prisma.task.findMany({
+        where: { projectId },
+        include: {
+            assignee: { select: { id: true, name: true, email: true, avatar: true } },
+            lead: { select: { id: true, name: true, email: true, avatar: true } },
+            subtasks: true
+        },
+        orderBy: { createdAt: 'desc' }
+    });
 };
 
 const findTaskById = (taskId) => {
-    return Task.findById(taskId)
-        .populate('assigneeId', 'name email avatar')
-        .populate('leadId', 'name email avatar');
+    return prisma.task.findUnique({
+        where: { id: taskId },
+        include: {
+            assignee: { select: { id: true, name: true, email: true, avatar: true } },
+            lead: { select: { id: true, name: true, email: true, avatar: true } },
+            subtasks: true
+        }
+    });
 };
 
 const createTask = (taskData) => {
-    return Task.create(taskData);
+    const { subtasks, ...data } = taskData;
+    return prisma.task.create({
+        data: {
+            ...data,
+            subtasks: subtasks && subtasks.length > 0 ? {
+                create: subtasks.map(st => ({ title: st.title, completed: st.completed || false }))
+            } : undefined
+        },
+        include: { subtasks: true }
+    });
 };
 
 const updateTask = (taskId, updateData) => {
-    return Task.findByIdAndUpdate(
-        taskId,
-        { $set: updateData },
-        { new: true }
-    ).populate('assigneeId', 'name email avatar');
+    const { subtasks, ...data } = updateData;
+    return prisma.task.update({
+        where: { id: taskId },
+        data,
+        include: {
+            assignee: { select: { id: true, name: true, email: true, avatar: true } },
+            lead: { select: { id: true, name: true, email: true, avatar: true } },
+            subtasks: true
+        }
+    });
 };
 
 const deleteTask = (taskId) => {
-    return Task.findByIdAndDelete(taskId);
+    return prisma.task.delete({
+        where: { id: taskId }
+    });
 };
 
 const toggleSubtask = async (taskId, subtaskId) => {
-    const task = await Task.findById(taskId);
-    if (!task) return null;
-    const subtask = task.subtasks.id(subtaskId);
+    const subtask = await prisma.subtask.findUnique({ where: { id: subtaskId } });
     if (!subtask) return null;
-    subtask.completed = !subtask.completed;
-    await task.save();
-    return task;
+    await prisma.subtask.update({
+        where: { id: subtaskId },
+        data: { completed: !subtask.completed }
+    });
+    return findTaskById(taskId);
 };
 
-const addSubtask = (taskId, subtaskData) => {
-    return Task.findByIdAndUpdate(
-        taskId,
-        { $push: { subtasks: subtaskData } },
-        { new: true }
-    );
+const addSubtask = async (taskId, subtaskData) => {
+    await prisma.subtask.create({
+        data: {
+            taskId,
+            ...subtaskData
+        }
+    });
+    return findTaskById(taskId);
 };
 
-const removeSubtask = (taskId, subtaskId) => {
-    return Task.findByIdAndUpdate(
-        taskId,
-        { $pull: { subtasks: { _id: subtaskId } } },
-        { new: true }
-    );
+const removeSubtask = async (taskId, subtaskId) => {
+    await prisma.subtask.delete({
+        where: { id: subtaskId }
+    });
+    return findTaskById(taskId);
 };
 
-const editSubtask = (taskId, subtaskId, title) => {
-    return Task.findOneAndUpdate(
-        { _id: taskId, 'subtasks._id': subtaskId },
-        { $set: { 'subtasks.$.title': title } },
-        { new: true }
-    );
+const editSubtask = async (taskId, subtaskId, title) => {
+    await prisma.subtask.update({
+        where: { id: subtaskId },
+        data: { title }
+    });
+    return findTaskById(taskId);
 };
 
 module.exports = {
@@ -74,5 +101,3 @@ module.exports = {
     removeSubtask,
     editSubtask
 };
-
-

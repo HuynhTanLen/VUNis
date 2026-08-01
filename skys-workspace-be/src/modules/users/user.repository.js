@@ -1,36 +1,129 @@
 /**
  * @file user.repository.js
- * @description Tầng Repository cho module Users độc lập.
- * CHỈ chứa truy vấn MongoDB liên quan đến quản lý người dùng.
+ * @description Tầng Repository cho module Users sử dụng PostgreSQL (Prisma ORM).
  */
-const User = require('./user.schema');
+const prisma = require('../../config/prisma');
 
-const findAllUsers = (filter = {}) => {
-    return User.find(filter).select('-password').sort({ createdAt: -1 });
+const findAllUsers = async (filter = {}) => {
+    const where = {};
+    if (filter.status) where.status = filter.status;
+    if (filter.role) where.role = filter.role;
+    if (filter.isBlocked !== undefined) where.isBlocked = filter.isBlocked === true || filter.isBlocked === 'true';
+
+    return await prisma.user.findMany({
+        where,
+        select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            status: true,
+            isBlocked: true,
+            jobTitle: true,
+            department: true,
+            company: true,
+            avatar: true,
+            phone: true,
+            lastActiveAt: true,
+            createdAt: true,
+            updatedAt: true
+        },
+        orderBy: { createdAt: 'desc' }
+    });
 };
 
-const findUserById = (id) => {
-    return User.findById(id).select('-password');
+const findUserById = async (id) => {
+    return await prisma.user.findUnique({
+        where: { id },
+        select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            status: true,
+            isBlocked: true,
+            jobTitle: true,
+            department: true,
+            company: true,
+            avatar: true,
+            phone: true,
+            lastActiveAt: true,
+            createdAt: true,
+            updatedAt: true
+        }
+    });
 };
 
-const findUserByEmail = (email) => {
-    return User.findOne({ email });
+const findUserByEmail = async (email) => {
+    return await prisma.user.findUnique({
+        where: { email }
+    });
 };
 
-const updateUserProfile = (userId, updateData) => {
-    return User.findByIdAndUpdate(userId, { $set: updateData }, { new: true }).select('-password');
+const updateUserProfile = async (userId, updateData) => {
+    return await prisma.user.update({
+        where: { id: userId },
+        data: updateData,
+        select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            status: true,
+            isBlocked: true,
+            jobTitle: true,
+            department: true,
+            company: true,
+            avatar: true,
+            phone: true,
+            lastActiveAt: true,
+            createdAt: true,
+            updatedAt: true
+        }
+    });
 };
 
-const updateUserRole = (userId, role) => {
-    return User.findByIdAndUpdate(userId, { role }, { new: true }).select('-password');
+const updateUserRole = async (userId, role) => {
+    return await prisma.user.update({
+        where: { id: userId },
+        data: { role },
+        select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            status: true,
+            isBlocked: true,
+            lastActiveAt: true,
+            createdAt: true,
+            updatedAt: true
+        }
+    });
 };
 
-const toggleBlockUser = (userId, isBlocked) => {
-    return User.findByIdAndUpdate(userId, { isBlocked }, { new: true }).select('-password');
+const toggleBlockUser = async (userId, isBlocked) => {
+    const status = isBlocked ? 'suspended' : 'active';
+    return await prisma.user.update({
+        where: { id: userId },
+        data: { isBlocked, status },
+        select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            status: true,
+            isBlocked: true,
+            lastActiveAt: true,
+            createdAt: true,
+            updatedAt: true
+        }
+    });
 };
 
-const deleteUser = (userId) => {
-    return User.findByIdAndDelete(userId);
+const deleteUser = async (userId) => {
+    return await prisma.user.delete({
+        where: { id: userId }
+    });
 };
 
 module.exports = {

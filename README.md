@@ -1,9 +1,9 @@
-# 🚀 SKYS PLATFORM — ENTERPRISE AGILE TASK & PROJECT MANAGEMENT SYSTEM
+# KS PLATFORM — ENTERPRISE AGILE TASK & PROJECT MANAGEMENT SYSTEM
 > *Hệ thống Quản lý Dự án & Công việc Agile Doanh nghiệp — Node.js + Express.js + MongoDB + Next.js*
 
 ---
 
-## 📋 MỤC LỤC
+## MỤC LỤC
 1. [Giới thiệu Dự án](#-giới-thiệu-dự-án)
 2. [Điểm Nổi Bật Về Kiến Trúc & Thuật Toán](#-điểm-nổi-bật-về-kiến-trúc--thuật-toán)
 3. [Phân Quyền Admin Cấp Độ Google Workspace (RBAC)](#-phân-quyền-admin-cấp-độ-google-workspace-rbac)
@@ -14,13 +14,13 @@
 
 ---
 
-## 🌟 GIỚI THIỆU DỰ ÁN
+##  GIỚI THIỆU DỰ ÁN
 
 **Skys Platform** là hệ thống quản lý công việc và dự án theo phương pháp Agile/Scrum doanh nghiệp (tương tự Jira, ClickUp và Monday.com). Hệ thống hỗ trợ lập kế hoạch Sprint, vẽ sơ đồ PERT/Gantt Chart, phân cấp cây dự án con, bình luận lồng nhau và theo dõi trạng thái người dùng theo thời gian thực.
 
 ---
 
-## ⚡ ĐIỂM NỔI BẬT VỀ KIẾN TRÚC & THUẬT TOÁN
+##  ĐIỂM NỔI BẬT VỀ KIẾN TRÚC & THUẬT TOÁN
 
 ### 1. Phân Quyền Cấp Độ Admin Google Workspace (RBAC)
 * Thay thế mô hình `populate()` 3 tầng cồng kềnh bằng **Chuỗi Enum Role trực tiếp** trên Document `User`.
@@ -41,7 +41,7 @@
 
 ---
 
-## 🛡️ PHÂN QUYỀN ADMIN CẤP ĐỘ GOOGLE WORKSPACE (RBAC)
+##  PHÂN QUYỀN ADMIN CẤP ĐỘ GOOGLE WORKSPACE (RBAC)
 
 Hệ thống phân định 5 cấp độ Admin chuyên biệt + 1 User thông thường:
 
@@ -58,7 +58,7 @@ Hệ thống phân định 5 cấp độ Admin chuyên biệt + 1 User thông th
 
 ---
 
-## 🛠️ CÔNG NGHỆ SỬ DỤNG (TECH STACK)
+##  CÔNG NGHỆ SỬ DỤNG (TECH STACK)
 
 ### Backend Services (`skys-workspace-be`):
 * **Core**: Node.js, Express.js
@@ -72,7 +72,7 @@ Hệ thống phân định 5 cấp độ Admin chuyên biệt + 1 User thông th
 
 ---
 
-## 🏗️ MÔ HÌNH 6 TẦNG CHUẨN MODULAR (6-LAYER ARCHITECTURE)
+##  MÔ HÌNH 6 TẦNG CHUẨN MODULAR (6-LAYER ARCHITECTURE)
 
 Mỗi module nghiệp vụ (như `auth`, `users`, `projects`, `tasks`, `sprints`, `comments`) được cấu trúc nghiêm ngặt thành 6 file:
 
@@ -88,7 +88,7 @@ src/modules/<module-name>/
 
 ---
 
-## 📬 DANH SÁCH BỘ API ENDPOINTS
+##  DANH SÁCH BỘ API ENDPOINTS
 
 ### 1. Xác thực & Bảo mật (`/api/auth`)
 * `POST /api/auth/register` — Đăng ký tài khoản mới.
@@ -133,7 +133,7 @@ src/modules/<module-name>/
 
 ---
 
-## ⚡ HƯỚNG DẪN CÀI ĐẶT & CHẠY DỰ ÁN
+##  HƯỚNG DẪN CÀI ĐẶT & CHẠY DỰ ÁN
 
 ### 1. Yêu cầu môi trường
 * Node.js version `>= 18.0.0`
@@ -165,7 +165,7 @@ npm run dev
 ```
 Giao diện Web sẽ khởi chạy tại: `http://localhost:3000`
 
-### 🔑 Khởi tạo Tài khoản Admin Hệ thống (Security Configuration)
+###  Khởi tạo Tài khoản Admin Hệ thống (Security Configuration)
 Tài khoản Admin tối cao được khởi tạo tự động an toàn thông qua biến môi trường trong file `.env`:
 * **Email Admin**: Đọc từ biến môi trường `ADMIN_EMAIL`
 * **Mật khẩu**: Đọc từ biến môi trường `ADMIN_PASSWORD` (được tự động băm mã hóa bằng `bcrypt` trước khi lưu vào Database).
@@ -173,6 +173,6 @@ Tài khoản Admin tối cao được khởi tạo tự động an toàn thông 
 
 ---
 
-### 📝 LICENSE & AUTHOR
+###  LICENSE & AUTHOR
 * **Dự án**: Skys Platform System
 * **Bản quyền**: © 2026 Skys Platform Team. All rights reserved.

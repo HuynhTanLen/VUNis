@@ -5,11 +5,11 @@
 const attRepo = require('./attachment.repository');
 const attMapper = require('./attachment.mapper');
 const { AttachmentNotFoundError } = require('./attachment.error');
-const Task = require('../tasks/task.schema');
+const prisma = require('../../config/prisma');
 const { NotFoundError } = require('../../shared/errors/AppError');
 
 const getByTask = async (taskId) => {
-    const taskExists = await Task.findById(taskId);
+    const taskExists = await prisma.task.findUnique({ where: { id: taskId } });
     if (!taskExists) {
         throw new NotFoundError('Công việc');
     }
@@ -24,7 +24,7 @@ const getAllByTask = async() =>{
 }
 
 const createAttachment = async (dto, uploaderId) => {
-    const taskExists = await Task.findById(dto.taskId);
+    const taskExists = await prisma.task.findUnique({ where: { id: dto.taskId } });
     if (!taskExists) {
         throw new NotFoundError('Công việc');
     }
@@ -35,8 +35,8 @@ const createAttachment = async (dto, uploaderId) => {
         url: dto.url,
         size: dto.size,
         mimeType: dto.mimeType,
-        task: dto.taskId,
-        uploader: uploaderId
+        taskId: dto.taskId,
+        uploaderId: uploaderId
     });
 
     return attMapper.toAttachmentResponse(att);

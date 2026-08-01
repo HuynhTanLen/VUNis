@@ -4,9 +4,11 @@ class CreateProjectDTO {
     constructor(body) {
         this.name = body.name?.trim();
         this.description = body.description?.trim() || '';
-        this.budget = body.budget !== undefined ? Number(body.budget) : 0;
-        this.durationWeeks = body.durationWeeks !== undefined ? Number(body.durationWeeks) : null;
-        this.startDate = body.startDate ? new Date(body.startDate) : null;
+        const parsedBudget = Number(body.budget);
+        this.budget = (!isNaN(parsedBudget) && parsedBudget >= 0) ? parsedBudget : 0;
+        this.scale = body.scale ? String(body.scale).trim() : null;
+        this.durationWeeks = body.durationWeeks !== undefined && body.durationWeeks !== '' && !isNaN(Number(body.durationWeeks)) ? Number(body.durationWeeks) : 4;
+        this.startDate = body.startDate ? new Date(body.startDate) : new Date();
         this.priority = body.priority?.trim() || 'Medium';
 
         // Tự động tính endDate từ startDate + durationWeeks
@@ -40,8 +42,12 @@ class UpdateProjectDTO {
     constructor(body) {
         if (body.name !== undefined) this.name = body.name?.trim();
         if (body.description !== undefined) this.description = body.description?.trim();
-        if (body.budget !== undefined) this.budget = Number(body.budget);
-        if (body.durationWeeks !== undefined) this.durationWeeks = body.durationWeeks !== null ? Number(body.durationWeeks) : null;
+        if (body.budget !== undefined) {
+            const parsed = Number(body.budget);
+            this.budget = !isNaN(parsed) && parsed >= 0 ? parsed : 0;
+        }
+        if (body.scale !== undefined) this.scale = body.scale ? String(body.scale).trim() : null;
+        if (body.durationWeeks !== undefined) this.durationWeeks = (body.durationWeeks !== null && !isNaN(Number(body.durationWeeks))) ? Number(body.durationWeeks) : null;
         if (body.startDate !== undefined) this.startDate = body.startDate ? new Date(body.startDate) : null;
         if (body.endDate !== undefined) this.endDate = body.endDate ? new Date(body.endDate) : null;
         if (body.status !== undefined) this.status = body.status?.trim();

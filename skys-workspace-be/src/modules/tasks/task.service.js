@@ -49,9 +49,9 @@ const create = async (dto, userId) => {
         priority: dto.priority || 'medium',
         subtasks: dto.subtasks || [],
         role: dto.role,
-        project: dto.projectId,
-        sprint: dto.sprintId,
-        assignee: dto.assigneeId || userId,
+        projectId: dto.projectId,
+        sprintId: dto.sprintId,
+        assigneeId: dto.assigneeId || userId,
         startDate: finalStartDate,
         endDate: finalEndDate,
         estimatedCost: dto.estimatedCost,
@@ -75,14 +75,14 @@ const update = async (taskId, dto) => {
     }
 
     // Kiểm tra ngày task có nằm trong khoảng ngày dự án không
-    const project = await projectRepo.findProjectById(task.project);
+    const project = await projectRepo.findProjectById(task.projectId);
     if (project) {
         validateTaskDatesWithinProject(project, finalStartDate, finalEndDate);
     }
 
     const updateData = {};
     const allowedFields = [
-        'title', 'status', 'priority', 'subtasks', 'role', 'sprint', 'assignee',
+        'title', 'status', 'priority', 'subtasks', 'role', 'sprintId', 'assigneeId',
         'startDate', 'endDate', 'estimatedCost', 'actualCost'
     ];
     allowedFields.forEach(field => {
@@ -90,7 +90,7 @@ const update = async (taskId, dto) => {
             updateData[field] = dto[field];
         }
     });
-    if (dto.assigneeId !== undefined) updateData.assignee = dto.assigneeId || null;
+    if (dto.assigneeId !== undefined) updateData.assigneeId = dto.assigneeId || null;
 
     const updatedTask = await taskRepo.updateTask(taskId, updateData);
     return taskMapper.toTaskResponse(updatedTask);
@@ -98,7 +98,10 @@ const update = async (taskId, dto) => {
 
 const checkTaskPermission = (task, currentUserId, userProjectRole) =>{
     if(userProjectRole === 'PROJECT_MANAGER') return;
-    const isAssigned = task.assigneeId?._id.toString() === currentUserId.toString() || task.assigneeId.toString() === currentUserId.toString(); 
+    
+    // Support either object (populate) or string/uuid ID
+    const taskAssigneeId = task.assignee?.id || task.assigneeId;
+    const isAssigned = taskAssigneeId && taskAssigneeId.toString() === currentUserId.toString(); 
     
     if(isAssigned) return;
 

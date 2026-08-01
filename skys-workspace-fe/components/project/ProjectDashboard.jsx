@@ -161,7 +161,8 @@ export default function ProjectDashboard({ onSelectProject }) {
       await createProject({
         name: newProject.name,
         description: newProject.description,
-        budget: newProject.budget,
+        scale: newProject.scale || 'Vừa (5-15 người)',
+        budget: typeof newProject.budget === 'number' ? newProject.budget : 0,
         durationWeeks: newProject.durationWeeks 
           ? (
               newProject.durationUnit === 'weeks' ? Number(newProject.durationWeeks) :
@@ -169,14 +170,15 @@ export default function ProjectDashboard({ onSelectProject }) {
               newProject.durationUnit === 'months' ? (Number(newProject.durationWeeks) * 30) / 7 :
               (Number(newProject.durationWeeks) * 90) / 7
             )
-          : undefined,
+          : 4,
         startDate: newProject.startDate || undefined,
-        priority: newProject.priority
+        priority: newProject.priority || 'Medium'
       });
       setNewProject({ 
         name: '', 
         description: '', 
-        budget: '', 
+        scale: 'Vừa (5-15 người)',
+        budget: 0, 
         durationWeeks: '', 
         durationUnit: 'weeks', 
         startDate: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0], 
@@ -196,7 +198,8 @@ export default function ProjectDashboard({ onSelectProject }) {
       await updProject(editProject.id, {
         name: editProject.data.name,
         description: editProject.data.description,
-        budget: editProject.data.budget,
+        scale: editProject.data.scale,
+        budget: typeof editProject.data.budget === 'number' ? editProject.data.budget : 0,
         durationWeeks: editProject.data.durationWeeks 
           ? (
               editDurationUnit === 'weeks' ? Number(editProject.data.durationWeeks) :
@@ -244,6 +247,8 @@ export default function ProjectDashboard({ onSelectProject }) {
     }
   };
 
+  const [editingPriority, setEditingPriority] = useState(null);
+
   const handleUpdateStatus = async (projectId, newStatus) => {
     try {
       await updProject(projectId, { status: newStatus });
@@ -251,37 +256,59 @@ export default function ProjectDashboard({ onSelectProject }) {
       setProjects(prev => prev.map(p =>
         p.id === projectId ? { ...p, status: newStatus } : p
       ));
-      showToast(`Đã cập nhật trạng thái: ${STATUS_LABEL[newStatus]}`);
+      showToast(`Đã cập nhật trạng thái: ${STATUS_LABEL[newStatus] || newStatus}`);
     } catch (err) {
       showToast('Cập nhật trạng thái thất bại: ' + (err?.response?.data?.message || err.message), 'error');
     }
   };
 
+  const handleUpdatePriority = async (projectId, newPriority) => {
+    try {
+      await updProject(projectId, { priority: newPriority });
+      setEditingPriority(null);
+      setProjects(prev => prev.map(p =>
+        p.id === projectId ? { ...p, priority: newPriority } : p
+      ));
+      showToast('Đã cập nhật mức độ ưu tiên');
+    } catch (err) {
+      showToast('Cập nhật ưu tiên thất bại: ' + (err?.response?.data?.message || err.message), 'error');
+    }
+  };
+
+  const normalizeStatus = (rawStatus) => {
+    if (!rawStatus) return 'active';
+    const s = rawStatus.toString().toLowerCase();
+    if (s === 'active' || s === 'on_going' || s === 'in_progress') return 'active';
+    if (s === 'paused' || s === 'on_hold' || s === 'pending') return 'paused';
+    if (s === 'done' || s === 'completed' || s === 'finished') return 'done';
+    return 'active';
+  };
+
   // KPI Calculations
-  const countActive = projects.filter(p => (p.status || 'active') === 'active').length;
-  const countPaused = projects.filter(p => p.status === 'paused').length;
-  const countDone   = projects.filter(p => p.status === 'done').length;
+  const countActive = projects.filter(p => normalizeStatus(p.status) === 'active').length;
+  const countPaused = projects.filter(p => normalizeStatus(p.status) === 'paused').length;
+  const countDone   = projects.filter(p => normalizeStatus(p.status) === 'done').length;
 
   const filteredProjects = filter === 'all'
     ? projects
-    : projects.filter(p => (p.status || 'active') === filter);
+    : projects.filter(p => normalizeStatus(p.status) === filter);
 
   return (
     <section className="space-y-6 max-w-6xl mx-auto w-full px-4 py-6 md:px-8 md:py-10" aria-labelledby="dashboard-title">
 
       {/* HEADER & BRIEF */}
-      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 pb-5">
         <div>
-          <h1 id="dashboard-title" className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">
-            Không gian làm việc dự án
+          <h1 id="dashboard-title" className="text-xl font-bold text-slate-900 tracking-tight">
+            Dự án & Không gian làm việc
           </h1>
-          <p className="text-xs text-slate-500 mt-1 font-medium leading-relaxed">
+          <p className="text-xs text-slate-500 mt-1 font-normal leading-relaxed">
             Xem danh sách, quản lý tiến độ dự án, cấu trúc ngân sách và phân phối nhiệm vụ nhóm.
           </p>
         </div>
         <button
           onClick={() => { setShowForm(!showForm); setEditProject(null); }}
-          className="w-full sm:w-auto flex items-center justify-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold rounded-xl transition-all text-xs shadow-md shadow-indigo-600/10 active:scale-[0.98]"
+          className="btn-primary w-full sm:w-auto"
         >
           <FolderPlus className="w-4 h-4" />
           Tạo dự án mới
@@ -291,25 +318,30 @@ export default function ProjectDashboard({ onSelectProject }) {
       {/* BENTO GRID METRICS */}
       <section aria-label="Các chỉ số trạng thái dự án" className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
-          { code: 'active', label: 'Đang thực hiện', value: countActive, color: 'bg-indigo-500', desc: 'Dự án đang triển khai', textColor: 'text-indigo-600', ringColor: 'hover:ring-indigo-200' },
-          { code: 'paused', label: 'Tạm dừng', value: countPaused, color: 'bg-amber-500', desc: 'Dự án đang chờ duyệt', textColor: 'text-amber-600', ringColor: 'hover:ring-amber-200' },
-          { code: 'done', label: 'Hoàn thành', value: countDone, color: 'bg-emerald-500', desc: 'Dự án đã bàn giao', textColor: 'text-emerald-600', ringColor: 'hover:ring-emerald-200' },
+          { code: 'active', label: 'Đang thực hiện', value: countActive, topBorder: 'border-t-2 border-indigo-600', desc: 'Dự án đang triển khai', textColor: 'text-indigo-600' },
+          { code: 'paused', label: 'Tạm dừng', value: countPaused, topBorder: 'border-t-2 border-amber-500', desc: 'Dự án đang chờ duyệt', textColor: 'text-amber-600' },
+          { code: 'done', label: 'Hoàn thành', value: countDone, topBorder: 'border-t-2 border-emerald-600', desc: 'Dự án đã hoàn tất', textColor: 'text-emerald-600' },
         ].map((stat) => {
           const isFilteringThis = filter === stat.code;
           return (
             <div
               key={stat.code}
               onClick={() => setFilter(filter === stat.code ? 'all' : stat.code)}
-              className={`p-4 bg-white/70 backdrop-blur-md rounded-2xl border transition-all duration-300 cursor-pointer shadow-sm hover:shadow-md flex flex-col justify-between h-28 hover:-translate-y-0.5 ${stat.ringColor} ${isFilteringThis ? 'ring-2 ring-indigo-600 border-transparent bg-white shadow-md' : 'border-slate-200/60'
-                }`}
+              className={`bg-white rounded-xl border p-5 shadow-sm transition-all duration-200 cursor-pointer ${stat.topBorder} ${
+                isFilteringThis ? 'border-indigo-500 shadow-md ring-1 ring-indigo-500' : 'border-slate-200/80 hover:border-slate-300 hover:shadow-md'
+              }`}
             >
-              <div className="flex justify-between items-start">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{stat.label}</span>
-                <span className={`w-2 h-2 rounded-full ${stat.color} shadow-sm`} />
+              <div className="flex justify-between items-center mb-3">
+                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{stat.label}</span>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                  stat.code === 'active' ? 'bg-indigo-50 text-indigo-700' :
+                  stat.code === 'paused' ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'
+                }`}>
+                  ● {stat.desc}
+                </span>
               </div>
-              <div className="flex items-baseline justify-between mt-2">
-                <div className="text-3xl font-black text-slate-900 tracking-tight">{loading ? '...' : stat.value}</div>
-                <span className={`text-[10px] font-bold ${stat.textColor}`}>{stat.desc}</span>
+              <div className="text-3xl font-bold text-slate-900 tracking-tight">
+                {loading ? '...' : stat.value}
               </div>
             </div>
           );
@@ -318,13 +350,13 @@ export default function ProjectDashboard({ onSelectProject }) {
 
       {/* CREATE FORM CARD */}
       {showForm && (
-        <section aria-label="Biểu mẫu khởi tạo dự án" className="bg-white/90 backdrop-blur-md rounded-2xl border border-indigo-100 p-6 shadow-md space-y-5 animate-in fade-in slide-in-from-top-4 duration-300">
+        <section aria-label="Biểu mẫu khởi tạo dự án" className="bg-white rounded-xl border border-slate-200/80 p-6 shadow-sm space-y-5">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <h2 className="font-bold text-slate-900 text-xs uppercase tracking-widest flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-indigo-600 animate-ping" />
+              <span className="w-2 h-2 rounded-full bg-indigo-600" />
               Khởi tạo dự án mới
             </h2>
-            <span className="text-[10px] bg-indigo-50 text-indigo-700 font-bold px-3 py-1 rounded-full border border-indigo-100">
+            <span className="badge-soft badge-soft-indigo">
               Bạn sẽ là PM dự án
             </span>
           </div>
@@ -334,37 +366,36 @@ export default function ProjectDashboard({ onSelectProject }) {
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Tên dự án *</label>
                 <input
-                  placeholder="VD: Dự án phần mềm kế toán"
+                  placeholder="VD: Nâng cấp Hệ thống Bán hàng Mobile"
                   required
                   value={newProject.name}
                   onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
-                  className="w-full px-3 py-2.5 bg-slate-50/50 hover:bg-slate-50/80 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-450 focus:bg-white focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 transition-all font-semibold"
+                  className="input-enterprise font-semibold"
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Ngân sách dự kiến (VNĐ)</label>
-                <input
-                  type="number" min={0}
-                  placeholder="VD: 50000000"
-                  value={newProject.budget}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val !== '' && Number(val) < 0) return;
-                    setNewProject({ ...newProject, budget: val === '' ? '' : Number(val) });
-                  }}
-                  className="w-full px-3 py-2.5 bg-slate-50/50 hover:bg-slate-50/80 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-450 focus:bg-white focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 transition-all font-semibold"
-                />
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Quy mô dự án</label>
+                <select
+                  value={newProject.scale || 'Vừa (5-15 người)'}
+                  onChange={(e) => setNewProject({ ...newProject, scale: e.target.value })}
+                  className="input-enterprise font-semibold"
+                >
+                  <option value="Nhỏ (1-5 người)">Nhỏ (1 - 5 thành viên)</option>
+                  <option value="Vừa (5-15 người)">Vừa (5 - 15 thành viên)</option>
+                  <option value="Lớn (15-50 người)">Lớn (15 - 50 thành viên)</option>
+                  <option value="Doanh nghiệp (>50 người)">Doanh nghiệp (Trên 50 thành viên)</option>
+                </select>
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Mô tả mục tiêu</label>
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Mô tả mục tiêu dự án</label>
               <textarea
-                placeholder="Mô tả tóm tắt mục tiêu dự án..."
+                placeholder="Mô tả tóm tắt mục tiêu và phạm vi dự án..."
                 value={newProject.description}
                 rows={2}
                 onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
-                className="w-full px-3 py-2.5 bg-slate-50/50 hover:bg-slate-50/80 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-450 focus:bg-white focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 transition-all resize-none font-semibold leading-relaxed"
+                className="input-enterprise resize-none leading-relaxed"
               />
             </div>
             
@@ -374,15 +405,15 @@ export default function ProjectDashboard({ onSelectProject }) {
                 <div className="flex gap-2">
                   <input
                     type="number" min={1} max={260}
-                    placeholder="Nhập số lượng..."
+                    placeholder="Số lượng..."
                     value={newProject.durationWeeks}
                     onChange={(e) => setNewProject({ ...newProject, durationWeeks: e.target.value })}
-                    className="flex-1 px-3 py-2.5 bg-slate-50/50 hover:bg-slate-50/80 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-450 focus:bg-white focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 transition-all font-semibold"
+                    className="flex-1 input-enterprise"
                   />
                   <select
                     value={newProject.durationUnit}
                     onChange={(e) => setNewProject({ ...newProject, durationUnit: e.target.value })}
-                    className="px-3 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 font-bold focus:bg-white focus:outline-none focus:border-indigo-400 transition-all"
+                    className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 font-semibold focus:outline-none focus:border-indigo-500"
                   >
                     <option value="days">Ngày</option>
                     <option value="weeks">Tuần</option>
@@ -390,14 +421,6 @@ export default function ProjectDashboard({ onSelectProject }) {
                     <option value="quarters">Quý</option>
                   </select>
                 </div>
-                {newProject.durationWeeks > 0 && (
-                  <div className="text-[9px] text-indigo-600 font-bold space-y-0.5">
-                    <p>≈ {getDaysCount(newProject.durationWeeks, newProject.durationUnit)} ngày</p>
-                    {newProject.startDate && (
-                      <p className="text-violet-650">📅 Kết thúc dự kiến: {getExpectedEndDate(newProject.startDate, newProject.durationWeeks, newProject.durationUnit)}</p>
-                    )}
-                  </div>
-                )}
               </div>
 
               <div className="space-y-1.5">
@@ -406,7 +429,7 @@ export default function ProjectDashboard({ onSelectProject }) {
                   type="date"
                   value={newProject.startDate}
                   onChange={(e) => setNewProject({ ...newProject, startDate: e.target.value })}
-                  className="w-full px-3 py-2.5 bg-slate-50/50 hover:bg-slate-50/80 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-450 focus:bg-white focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 transition-all font-semibold"
+                  className="input-enterprise"
                 />
               </div>
 
@@ -415,7 +438,7 @@ export default function ProjectDashboard({ onSelectProject }) {
                 <select
                   value={newProject.priority}
                   onChange={(e) => setNewProject({ ...newProject, priority: e.target.value })}
-                  className="w-full px-3 py-2.5 bg-slate-50/50 hover:bg-slate-50/80 border border-slate-200 rounded-xl text-xs text-slate-850 focus:bg-white focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 transition-all font-bold"
+                  className="input-enterprise font-semibold"
                 >
                   <option value="Low">Thấp</option>
                   <option value="Medium">Trung bình</option>
@@ -427,14 +450,14 @@ export default function ProjectDashboard({ onSelectProject }) {
             <div className="flex gap-2.5 pt-4 border-t border-slate-100">
               <button 
                 type="submit" 
-                className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold rounded-xl text-xs transition-all shadow-md shadow-indigo-600/10 active:scale-[0.98]"
+                className="btn-primary"
               >
                 Khởi tạo dự án
               </button>
               <button 
                 type="button" 
                 onClick={() => setShowForm(false)} 
-                className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors"
+                className="btn-secondary"
               >
                 Hủy bỏ
               </button>
@@ -445,7 +468,7 @@ export default function ProjectDashboard({ onSelectProject }) {
 
       {/* EDIT PROJECT FORM */}
       {editProject && (
-        <section aria-label="Biểu mẫu chỉnh sửa dự án" className="bg-white/90 backdrop-blur-md rounded-2xl border border-amber-100 p-6 shadow-md space-y-5">
+        <section aria-label="Biểu mẫu chỉnh sửa dự án" className="bg-white rounded-xl border border-amber-200/80 p-6 shadow-sm space-y-5">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <h2 className="font-bold text-slate-900 text-xs uppercase tracking-widest flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-amber-500" />
@@ -459,15 +482,21 @@ export default function ProjectDashboard({ onSelectProject }) {
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Tên dự án *</label>
                 <input required value={editProject.data.name}
                   onChange={e => setEditProject(p => ({ ...p, data: { ...p.data, name: e.target.value } }))}
-                  className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-100 transition-all font-semibold" />
+                  className="input-enterprise" />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Ngân sách (VNĐ)</label>
-                <input type="number" min={0} value={editProject.data.budget || ''}
-                  onChange={e => setEditProject(p => ({ ...p, data: { ...p.data, budget: e.target.value } }))}
-                  className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-100 transition-all font-semibold" />
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Quy mô dự án</label>
+                <select
+                  value={editProject.data.scale || 'Vừa (5-15 người)'}
+                  onChange={e => setEditProject(p => ({ ...p, data: { ...p.data, scale: e.target.value } }))}
+                  className="input-enterprise font-semibold"
+                >
+                  <option value="Nhỏ (1-5 người)">Nhỏ (1 - 5 thành viên)</option>
+                  <option value="Vừa (5-15 người)">Vừa (5 - 15 thành viên)</option>
+                  <option value="Lớn (15-50 người)">Lớn (15 - 50 thành viên)</option>
+                  <option value="Doanh nghiệp (>50 người)">Doanh nghiệp (Trên 50 thành viên)</option>
+                </select>
               </div>
-              
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Thời hạn dự án</label>
                 <div className="flex gap-2">
@@ -475,12 +504,12 @@ export default function ProjectDashboard({ onSelectProject }) {
                     type="number" min={1} max={260}
                     value={editProject.data.durationWeeks || ''}
                     onChange={e => setEditProject(p => ({ ...p, data: { ...p.data, durationWeeks: e.target.value } }))}
-                    className="flex-1 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-100 transition-all font-semibold"
+                    className="flex-1 input-enterprise"
                   />
                   <select
                     value={editDurationUnit}
                     onChange={(e) => setEditDurationUnit(e.target.value)}
-                    className="px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-850 font-bold focus:outline-none focus:border-amber-400 transition-all"
+                    className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 font-semibold focus:outline-none focus:border-indigo-500"
                   >
                     <option value="days">Ngày</option>
                     <option value="weeks">Tuần</option>
@@ -488,30 +517,19 @@ export default function ProjectDashboard({ onSelectProject }) {
                     <option value="quarters">Quý</option>
                   </select>
                 </div>
-                {editProject.data.durationWeeks > 0 && (
-                  <div className="text-[9px] text-amber-600 font-bold space-y-0.5">
-                    <p>≈ {editDurationUnit === 'weeks' ? Number(editProject.data.durationWeeks) * 7 :
-                        editDurationUnit === 'days' ? Number(editProject.data.durationWeeks) :
-                        editDurationUnit === 'months' ? Number(editProject.data.durationWeeks) * 30 :
-                        Number(editProject.data.durationWeeks) * 90} ngày</p>
-                    {editProject.data.startDate && (
-                      <p className="text-orange-600">📅 Kết thúc dự kiến: {getExpectedEndDate(editProject.data.startDate, editProject.data.durationWeeks, editDurationUnit)}</p>
-                    )}
-                  </div>
-                )}
               </div>
 
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Ngày bắt đầu</label>
                 <input type="date" value={editProject.data.startDate ? new Date(editProject.data.startDate).toISOString().split('T')[0] : ''}
                   onChange={e => setEditProject(p => ({ ...p, data: { ...p.data, startDate: e.target.value } }))}
-                  className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-100 transition-all font-semibold" />
+                  className="input-enterprise" />
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Mức ưu tiên</label>
                 <select value={editProject.data.priority || 'Medium'}
                   onChange={e => setEditProject(p => ({ ...p, data: { ...p.data, priority: e.target.value } }))}
-                  className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-100 transition-all font-bold">
+                  className="input-enterprise font-semibold">
                   <option value="Low">Thấp</option>
                   <option value="Medium">Trung bình</option>
                   <option value="High">Cao</option>
@@ -521,7 +539,7 @@ export default function ProjectDashboard({ onSelectProject }) {
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Trạng thái</label>
                 <select value={editProject.data.status || 'active'}
                   onChange={e => setEditProject(p => ({ ...p, data: { ...p.data, status: e.target.value } }))}
-                  className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-100 transition-all font-bold">
+                  className="input-enterprise font-semibold">
                   <option value="active">Đang thực hiện</option>
                   <option value="paused">Tạm dừng</option>
                   <option value="done">Hoàn thành</option>
@@ -532,14 +550,14 @@ export default function ProjectDashboard({ onSelectProject }) {
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Mô tả</label>
               <textarea rows={2} value={editProject.data.description || ''}
                 onChange={e => setEditProject(p => ({ ...p, data: { ...p.data, description: e.target.value } }))}
-                className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-100 transition-all resize-none font-semibold leading-relaxed" />
+                className="input-enterprise resize-none leading-relaxed" />
             </div>
             <div className="flex gap-2.5 pt-4 border-t border-slate-100">
-              <button type="submit" className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold rounded-xl text-xs transition-all shadow-md active:scale-[0.98]">
+              <button type="submit" className="btn-primary">
                 Cập nhật dự án
               </button>
-              <button type="button" onClick={() => setEditProject(null)} className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors">
-                Hủy
+              <button type="button" onClick={() => setEditProject(null)} className="btn-secondary">
+                Hủy bỏ
               </button>
             </div>
           </form>
@@ -547,14 +565,14 @@ export default function ProjectDashboard({ onSelectProject }) {
       )}
 
       {/* FILTER BAR */}
-      <nav className="flex items-center gap-2 flex-wrap pb-1" aria-label="Bộ lọc danh sách dự án">
-        <span className="text-[10px] font-bold text-slate-455 uppercase tracking-widest mr-1">Bộ lọc dự án:</span>
-        <div className="flex bg-slate-200/50 p-1 rounded-xl border border-slate-200/40">
+      <nav className="flex items-center gap-3 flex-wrap pb-1" aria-label="Bộ lọc danh sách dự án">
+        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Bộ lọc dự án:</span>
+        <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200/60">
           <button
             onClick={() => setFilter('all')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+            className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
               filter === 'all'
-                ? 'bg-white text-indigo-700 shadow-xs'
+                ? 'bg-white text-indigo-700 shadow-sm'
                 : 'text-slate-500 hover:text-slate-900'
             }`}
           >
@@ -564,9 +582,9 @@ export default function ProjectDashboard({ onSelectProject }) {
             <button
               key={code}
               onClick={() => setFilter(code)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
                 filter === code
-                  ? 'bg-white text-indigo-700 shadow-xs'
+                  ? 'bg-white text-indigo-700 shadow-sm'
                   : 'text-slate-500 hover:text-slate-900'
               }`}
             >
@@ -574,7 +592,7 @@ export default function ProjectDashboard({ onSelectProject }) {
             </button>
           ))}
         </div>
-        <span className="ml-auto text-[10px] text-slate-455 font-bold uppercase tracking-widest">{filteredProjects.length} dự án</span>
+        <span className="ml-auto text-xs text-slate-400 font-medium">{filteredProjects.length} dự án</span>
       </nav>
 
       {/* PROJECTS LIST GRID */}
@@ -592,134 +610,117 @@ export default function ProjectDashboard({ onSelectProject }) {
       ) : (
         <section aria-label="Danh sách các dự án hiện có" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filteredProjects.map((project) => {
-            const status = project.status || 'active';
-            const hasBudget = project.budget !== undefined && project.budget !== null;
+            const status = (project.status || 'active').toLowerCase();
+            const priority = (project.priority || 'medium').toLowerCase();
+            const projectKey = project.key || `PRJ-${(project.id || '').toString().slice(-4).toUpperCase()}`;
+
             return (
               <article
                 key={project.id}
                 onClick={() => onSelectProject(project)}
-                className="bg-white/80 backdrop-blur-md rounded-2xl border border-slate-200/70 hover:border-indigo-200 hover:-translate-y-0.5 transition-all duration-300 cursor-pointer group relative flex flex-col justify-between overflow-hidden shadow-2xs hover:shadow-md"
+                className="bg-white rounded-xl border-2 border-slate-300 p-5 md:p-6 shadow-sm hover:border-indigo-600 hover:shadow-md transition-all duration-150 cursor-pointer group relative flex flex-col justify-between space-y-4 min-h-[215px]"
               >
-                {/* Visual Accent Ribbon */}
-                <div className={`h-1.5 w-full ${STATUS_DOT[status]} opacity-80`} />
-
-                <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
-                  <div className="space-y-2">
-                    {/* Header */}
-                    <div className="flex items-start justify-between">
-                      <h3 className="text-sm font-bold text-slate-900 group-hover:text-indigo-700 transition-colors line-clamp-1 pr-14 tracking-tight leading-snug">
-                        {project.name}
-                      </h3>
-                      <div className="absolute top-4 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleStartEdit(project); }}
-                          className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 border border-transparent hover:border-amber-100 rounded-lg transition-all"
-                          title="Chỉnh sửa dự án"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleDelClick(project, e);
-                          }}
-                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-100 rounded-lg transition-all"
-                          title="Xóa dự án"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-
-                    <p className="text-slate-500 text-[11px] font-medium line-clamp-2 leading-relaxed">
-                      {project.description || 'Chưa cập nhật mục tiêu và phạm vi công việc của dự án.'}
-                    </p>
-
-                    {project.priority && (
-                      <span className={`inline-block text-[9px] font-black px-2.5 py-0.5 rounded-full border uppercase tracking-wider ${
-                        project.priority === 'High' ? 'bg-rose-50 text-rose-700 border-rose-100':
-                        project.priority === 'Low' ? 'bg-slate-100 text-slate-600 border-slate-200':
-                        'bg-indigo-50 text-indigo-700 border-indigo-100'
-                      }`}>
-                        {project.priority === 'High' ? 'Cao' : project.priority === 'Low' ? 'Thấp': 'Trung bình'}
-                      </span>
-                    )}
+                {/* Header: Title + Action Buttons */}
+                <div className="flex items-start justify-between gap-3 pb-2.5 border-b-2 border-slate-200">
+                  <div className="space-y-1.5 flex-1 min-w-0">
+                    <h3 className="text-base font-bold text-slate-900 group-hover:text-indigo-600 transition-colors truncate">
+                      {project.name}
+                    </h3>
                   </div>
 
-                  {/* Status update selector */}
-                  <div className="pt-1" onClick={(e) => e.stopPropagation()}>
+                  {/* Actions overlay */}
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 bg-white border border-slate-300 rounded-lg p-0.5 shadow-2xs">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleStartEdit(project); }}
+                      className="p-1 text-slate-600 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors"
+                      title="Chỉnh sửa"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    </button>
+                    <button
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDelClick(project, e); }}
+                      className="p-1 text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
+                      title="Xóa"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Description */}
+                <p className="text-slate-600 text-xs font-normal line-clamp-2 leading-relaxed min-h-[36px] py-0.5">
+                  {project.description || 'Chưa cập nhật mô tả phạm vi công việc dự án.'}
+                </p>
+
+                {/* Native Badge Selectors (Priority & Status - Sharp 2px Borders) */}
+                <div className="flex items-center justify-between gap-2 py-2.5 border-t-2 border-b-2 border-slate-200 my-1" onClick={(e) => e.stopPropagation()}>
+                  
+                  {/* Priority Select */}
+                  <div>
                     {(() => {
                       const ownerId = project.owner && typeof project.owner === 'object' ? project.owner.id : project.owner;
                       const isPM = project.userRole === 'Project Manager' || (ownerId && user && ownerId.toString() === user.id?.toString());
+                      const normalizedPriority = (priority === 'high' || priority === 'urgent') ? 'High' : priority === 'low' ? 'Low' : 'Medium';
 
-                      if (editingStatus === project.id) {
-                        return (
-                          <div className="flex gap-1 flex-wrap">
-                            {STATUS_OPTIONS.map(({ code, label }) => (
-                              <button
-                                key={code}
-                                onClick={() => handleUpdateStatus(project.id, code)}
-                                className={`text-[9px] font-bold px-2.5 py-1 rounded-lg border transition-all ${STATUS_STYLE[code]}`}
-                              >
-                                {label}
-                              </button>
-                            ))}
-                            <button
-                              onClick={() => setEditingStatus(null)}
-                              className="text-[9px] font-bold px-2.5 py-1 rounded-lg border border-slate-200 bg-slate-50 text-slate-500"
-                            >
-                              Hủy
-                            </button>
-                          </div>
-                        );
-                      }
-
-                      if (isPM) {
-                        return (
-                          <button
-                            onClick={() => setEditingStatus(project.id)}
-                            className={`inline-flex items-center gap-1.5 text-[10px] font-bold px-3 py-1 rounded-full border ${STATUS_STYLE[status] || STATUS_STYLE.active} hover:opacity-80 transition-all shadow-3xs`}
-                            title="Thay đổi trạng thái"
-                          >
-                            <span className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[status]}`} />
-                            {STATUS_LABEL[status] || 'Đang thực hiện'}
-                          </button>
-                        );
-                      }
-
-                      // Nếu không phải PM -> chỉ hiển thị nhãn tĩnh không cho click
                       return (
-                        <span
-                          className={`inline-flex items-center gap-1.5 text-[10px] font-bold px-3 py-1 rounded-full border ${STATUS_STYLE[status] || STATUS_STYLE.active}`}
+                        <select
+                          value={normalizedPriority}
+                          onChange={(e) => isPM && handleUpdatePriority(project.id, e.target.value)}
+                          disabled={!isPM}
+                          className={`text-[11px] font-bold px-3 py-1 rounded-md border-2 cursor-pointer transition-colors outline-none appearance-none ${
+                            normalizedPriority === 'High'
+                              ? 'text-rose-700 bg-rose-50 border-rose-300 hover:bg-rose-100'
+                              : normalizedPriority === 'Low'
+                              ? 'text-slate-700 bg-slate-100 border-slate-300 hover:bg-slate-200'
+                              : 'text-amber-800 bg-amber-50 border-amber-300 hover:bg-amber-100'
+                          }`}
                         >
-                          <span className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[status]}`} />
-                          {STATUS_LABEL[status] || 'Đang thực hiện'}
-                        </span>
+                          <option value="High" className="text-rose-700 bg-white font-bold">Ưu tiên Cao</option>
+                          <option value="Medium" className="text-amber-800 bg-white font-bold">Ưu tiên Vừa</option>
+                          <option value="Low" className="text-slate-700 bg-white font-bold">Ưu tiên Thấp</option>
+                        </select>
                       );
                     })()}
                   </div>
 
-                  {/* Metadata info */}
-                  <div className="grid grid-cols-2 gap-2 pt-3.5 border-t border-slate-100 text-[10px] font-bold text-slate-455 uppercase tracking-wider">
-                    <div className="flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5 text-slate-400" />
-                      <span>
-                        {formatDuration(project.durationWeeks)}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-end gap-0.5 text-slate-700 font-extrabold">
-                      {hasBudget ? (
-                        <span>
-                          {Number(project.budget).toLocaleString()} đ
-                        </span>
-                      ) : (
-                        <span className="text-slate-400 font-semibold flex items-center gap-0.5 lowercase normal-case">
-                          <ShieldCheck className="w-3.5 h-3.5 text-slate-350" />
-                          bảo mật
-                        </span>
-                      )}
-                    </div>
+                  {/* Status Select */}
+                  <div>
+                    {(() => {
+                      const ownerId = project.owner && typeof project.owner === 'object' ? project.owner.id : project.owner;
+                      const isPM = project.userRole === 'Project Manager' || (ownerId && user && ownerId.toString() === user.id?.toString());
+                      const normalizedStatus = (status === 'paused' || status === 'on_hold') ? 'paused' : (status === 'done' || status === 'completed') ? 'done' : 'active';
+
+                      return (
+                        <select
+                          value={normalizedStatus}
+                          onChange={(e) => isPM && handleUpdateStatus(project.id, e.target.value)}
+                          disabled={!isPM}
+                          className={`text-[11px] font-bold px-3 py-1 rounded-md border-2 cursor-pointer transition-colors outline-none appearance-none ${
+                            normalizedStatus === 'paused'
+                              ? 'text-amber-800 bg-amber-50 border-amber-300 hover:bg-amber-100'
+                              : normalizedStatus === 'done'
+                              ? 'text-blue-700 bg-blue-50 border-blue-300 hover:bg-blue-100'
+                              : 'text-emerald-700 bg-emerald-50 border-emerald-300 hover:bg-emerald-100'
+                          }`}
+                        >
+                          <option value="active" className="text-emerald-700 bg-white font-bold">Đang thực hiện</option>
+                          <option value="paused" className="text-amber-800 bg-white font-bold">Tạm dừng</option>
+                          <option value="done" className="text-blue-700 bg-white font-bold">Hoàn thành</option>
+                        </select>
+                      );
+                    })()}
+                  </div>
+                </div>
+
+                {/* Footer Info: Duration & Scale */}
+                <div className="flex items-center justify-between pt-3 mt-auto border-t-2 border-slate-200 text-xs text-slate-600 font-medium">
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-slate-500" />
+                    <span>{formatDuration(project.durationWeeks)}</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-slate-800 font-bold">
+                    <span>Quy mô:</span>
+                    <span className="text-slate-900">{project.scale || 'Vừa (5-15 người)'}</span>
                   </div>
                 </div>
               </article>

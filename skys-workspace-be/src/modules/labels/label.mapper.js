@@ -7,10 +7,10 @@ const toLabelResponse = (lbl) => {
     if (!lbl) return null;
 
     return {
-        id: lbl._id,
+        id: lbl.id,
         name: lbl.name,
         color: lbl.color,
-        projectId: lbl.project?._id || lbl.project,
+        projectId: lbl.project?.id || lbl.projectId,
         createdAt: lbl.createdAt
     };
 };

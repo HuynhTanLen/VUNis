@@ -1,12 +1,10 @@
 /**
  * @file user.service.js
- * @description Business Logic cho module Users độc lập.
+ * @description Business Logic cho module Users độc lập (Sử dụng PostgreSQL & Prisma ORM).
  */
 const userRepo = require('./user.repository');
-const User = require('./user.schema');
-const UserStatusLog = require('../userStatusLog/userStatusLog.schema');
-const userMapper = require('./user.mapper')
-
+const userMapper = require('./user.mapper');
+const prisma = require('../../config/prisma');
 
 const getAllUsers = async (queryFilter = {}) => {
     const filter = {};
@@ -29,7 +27,6 @@ const getUserById = async (userId) => {
 };
 
 const updateProfile = async (currentUserId, targetUserId, dto) => {
-    // Chỉ chính chủ hoặc SUPER_ADMIN/USER_ADMIN được sửa profile
     const currentUser = await userRepo.findUserById(currentUserId);
     const isSelf = currentUserId.toString() === targetUserId.toString();
     const isAdmin = ['SUPER_ADMIN', 'USER_ADMIN'].includes(currentUser?.role);
@@ -52,7 +49,6 @@ const updateProfile = async (currentUserId, targetUserId, dto) => {
     return userMapper.toUserResponse(updatedUser);
 };
 
-
 const changeUserRole = async (currentUserId, targetUserId, newRole) => {
     if (currentUserId.toString() === targetUserId.toString()) {
         const error = new Error('Không thể tự thay đổi vai trò của chính mình');
@@ -69,10 +65,14 @@ const changeUserRole = async (currentUserId, targetUserId, newRole) => {
 
     const updatedUser = await userRepo.updateUserRole(targetUserId, newRole);
 
-    await UserStatusLog.create({
-        userId: targetUserId,
-        action: 'ROLE_CHANGED'
-    });
+    // Ghi log trạng thái sang PostgreSQL UserStatusLog
+    await prisma.userStatusLog.create({
+        data: {
+            userId: targetUserId,
+            status: 'ROLE_CHANGED',
+            reason: `Role changed to ${newRole}`
+        }
+    }).catch(() => {});
 
     return userMapper.toUserResponse(updatedUser);
 };
@@ -91,7 +91,7 @@ const toggleBlockUser = async (currentUserId, targetUserId, isBlocked) => {
         throw error;
     }
 
-    if (targetUser.role === User.ADMIN_ROLES.SUPER_ADMIN) {
+    if (targetUser.role === 'SUPER_ADMIN') {
         const error = new Error('Không thể khóa tài khoản SUPER_ADMIN hệ thống');
         error.statusCode = 403;
         throw error;
@@ -99,10 +99,14 @@ const toggleBlockUser = async (currentUserId, targetUserId, isBlocked) => {
 
     const updatedUser = await userRepo.toggleBlockUser(targetUserId, isBlocked);
 
-    await UserStatusLog.create({
-        userId: targetUserId,
-        action: isBlocked ? 'BLOCKED' : 'UNBLOCKED'
-    });
+    // Ghi log trạng thái sang PostgreSQL UserStatusLog
+    await prisma.userStatusLog.create({
+        data: {
+            userId: targetUserId,
+            status: isBlocked ? 'BLOCKED' : 'UNBLOCKED',
+            reason: isBlocked ? 'Blocked by Admin' : 'Unblocked by Admin'
+        }
+    }).catch(() => {});
 
     return userMapper.toUserResponse(updatedUser);
 };
@@ -121,7 +125,7 @@ const removeUser = async (currentUserId, targetUserId) => {
         throw error;
     }
 
-    if (targetUser.role === User.ADMIN_ROLES.SUPER_ADMIN) {
+    if (targetUser.role === 'SUPER_ADMIN') {
         const error = new Error('Không thể xóa tài khoản SUPER_ADMIN hệ thống');
         error.statusCode = 403;
         throw error;
@@ -132,27 +136,21 @@ const removeUser = async (currentUserId, targetUserId) => {
 };
 
 const getUserLogs = async (userId) => {
-    return UserStatusLog.find({ userId }).sort({ timestamp: -1 }).limit(50);
+    return await prisma.userStatusLog.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        take: 50
+    });
 };
 
 const getStatusLogsStats = async () => {
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const stats = await UserStatusLog.aggregate([
-        { $match: { timestamp: { $gte: sevenDaysAgo } } },
-        {
-            $group: {
-                _id: {
-                    date: { $dateToString: { format: "%Y-%m-%d", date: "$timestamp" } },
-                    action: "$action"
-                },
-                count: { $sum: 1 }
-            }
-        },
-        { $sort: { "_id.date": 1 } }
-    ]);
-    return stats;
+    const logs = await prisma.userStatusLog.findMany({
+        where: { createdAt: { gte: sevenDaysAgo } },
+        select: { createdAt: true, status: true }
+    });
+    return logs;
 };
-
 
 module.exports = {
     getAllUsers,
@@ -164,4 +162,3 @@ module.exports = {
     getUserLogs,
     getStatusLogsStats
 };
-

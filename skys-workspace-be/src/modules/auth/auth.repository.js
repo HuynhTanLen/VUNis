@@ -3,35 +3,90 @@
  * @description Tầng Repository cho module Auth.
  * CHỈ chứa các truy vấn Database đơn giản, hiệu năng cao không cần populate.
  */
-const User = require('./auth.schema');
+const prisma = require('../../config/prisma');
+
+const USER_SELECT_SAFE = {
+    id: true,
+    name: true,
+    email: true,
+    role: true,
+    status: true,
+    isBlocked: true,
+    lastActiveAt: true,
+    avatar: true,
+    createdAt: true,
+    updatedAt: true,
+};
 
 const findByEmail = (email) => {
-    return User.findOne({ email });
+    return prisma.user.findUnique({ where: { email } });
 };
 
 const findById = (id) => {
-    return User.findById(id).select('-password');
+    return prisma.user.findUnique({ where: { id }, select: USER_SELECT_SAFE });
 };
 
 const createUser = (data) => {
-    return User.create(data);
+    return prisma.user.create({ data });
 };
 
 const findAllUsers = () => {
-    return User.find()
+    return prisma.user.findMany({ select: USER_SELECT_SAFE, orderBy: { createdAt: 'desc' } });
 };
 
 const updateUserRole = (userId, role) => {
-    return User.findByIdAndUpdate(userId, { role }, { new: true }).select('-password');
+    return prisma.user.update({ where: { id: userId }, data: { role }, select: USER_SELECT_SAFE });
 };
 
 const toggleBlockUser = (userId, isBlocked) => {
-    return User.findByIdAndUpdate( userId, {isBlocked}, {new:true}).select('-password')
+    return prisma.user.update({ where: { id: userId }, data: { isBlocked }, select: USER_SELECT_SAFE });
 };
 
 const deleteUser = (userId) => {
-    return User.findByIdAndDelete(userId);
+    return prisma.user.delete({ where: { id: userId } });
 };
 
-module.exports = { findByEmail, findById, createUser, findAllUsers, updateUserRole, toggleBlockUser, deleteUser };
+const countUsers = () => {
+    return prisma.user.count();
+};
 
+const setResetToken = (userId, hashedToken, expireDate) => {
+    return prisma.user.update({
+        where: { id: userId },
+        data: { resetPasswordToken: hashedToken, resetPasswordExpire: expireDate }
+    });
+};
+
+const findByValidResetToken = (hashedToken) => {
+    return prisma.user.findFirst({
+        where: {
+            resetPasswordToken: hashedToken,
+            resetPasswordExpire: { gt: new Date() }
+        }
+    });
+};
+
+const updatePassword = (userId, hashedPassword) => {
+    return prisma.user.update({
+        where: { id: userId },
+        data: {
+            password: hashedPassword,
+            resetPasswordToken: null,
+            resetPasswordExpire: null
+        }
+    });
+};
+
+module.exports = { 
+    findByEmail, 
+    findById, 
+    createUser, 
+    findAllUsers, 
+    updateUserRole, 
+    toggleBlockUser, 
+    deleteUser,
+    countUsers,
+    setResetToken,
+    findByValidResetToken,
+    updatePassword
+};

@@ -2,7 +2,7 @@
  * @file rbac.middleware.js
  * @description Middleware Phân quyền Hệ thống (System RBAC) & Phân quyền Dự án (Project-Scoped RBAC).
  */
-const Project = require('../modules/projects/project.schema');
+const prisma = require('../config/prisma');
 
 /**
  * Middleware Phân quyền Hệ thống (System-Level RBAC) theo chuẩn Google Workspace.
@@ -37,7 +37,7 @@ const authorize = (...allowedRoles) => {
  * Middleware kiểm tra quyền thành viên trong một dự án cụ thể.
  * - SUPER_ADMIN và SERVICE_ADMIN hệ thống có thể xem/truy cập mọi dự án.
  * - Owner dự án luôn có toàn quyền trong dự án đó.
- * - Thành viên khác được kiểm tra theo vai trò nhúng trong mảng `project.members`.
+ * - Thành viên khác được kiểm tra qua ProjectMember.
  * 
  * @param {...string} allowedProjectRoles - Danh sách vai trò dự án được phép (VD: 'Leader', 'Member', 'Viewer')
  */
@@ -56,13 +56,12 @@ const checkProjectPermission = (...allowedProjectRoles) => {
             // Tự động tìm projectId
             let projectId = req.params.projectId || req.body.projectId || req.query.projectId;
             if (!projectId && req.params.id) {
-                const projectExists = await Project.findById(req.params.id);
+                const projectExists = await prisma.project.findUnique({ where: { id: req.params.id } });
                 if (projectExists) {
                     projectId = req.params.id;
                 } else {
-                    const Task = require('../modules/tasks/task.schema');
-                    const task = await Task.findById(req.params.id);
-                    if (task) projectId = task.projectId || task.project;
+                    const task = await prisma.task.findUnique({ where: { id: req.params.id } });
+                    if (task) projectId = task.projectId;
                 }
             }
 
@@ -70,23 +69,27 @@ const checkProjectPermission = (...allowedProjectRoles) => {
                 return res.status(400).json({ message: 'Không tìm thấy ID dự án tương ứng' });
             }
 
-            const project = await Project.findById(projectId);
+            const project = await prisma.project.findUnique({ where: { id: projectId } });
             if (!project) {
                 return res.status(404).json({ message: 'Không tìm thấy dự án' });
             }
 
-            const userIdStr = (req.user._id || req.user.userId).toString();
+            const userIdStr = (req.user.id || req.user.userId).toString();
 
             // Nếu người dùng hiện tại là Owner dự án -> Cho phép truy cập ngay
-            if (project.owner && project.owner.toString() === userIdStr) {
+            const ownerId = project.ownerId || project.owner;
+            if (ownerId && ownerId.toString() === userIdStr) {
                 req.currentProject = project;
                 return next();
             }
 
-            // Tìm thông tin member trong mảng nhúng members của Project
-            const member = (project.members || []).find(
-                m => m.userId && m.userId.toString() === userIdStr
-            );
+            // Tìm thông tin member qua bảng ProjectMember
+            const member = await prisma.projectMember.findFirst({
+                where: {
+                    projectId: projectId,
+                    userId: userIdStr
+                }
+            });
 
             if (!member) {
                 return res.status(403).json({ message: 'Bạn không có quyền truy cập dự án này' });
@@ -108,4 +111,3 @@ const checkProjectPermission = (...allowedProjectRoles) => {
 };
 
 module.exports = { authorize, checkProjectPermission };
-

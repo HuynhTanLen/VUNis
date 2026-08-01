@@ -39,22 +39,22 @@ export default function Workspace({ project, onBackToProjects }) {
     <article className="space-y-6 max-w-6xl mx-auto w-full px-4 py-6 md:px-8 md:py-10">
       
       {/* WORKSPACE HEADER */}
-      <header className="bg-white/80 backdrop-blur-md rounded-2xl border border-slate-200/60 shadow-sm relative overflow-hidden">
+      <header className="bg-white rounded-xl border-2 border-slate-300 shadow-sm relative overflow-hidden">
         {/* Top status bar indicator */}
-        <div className={`h-1.5 w-full ${STATUS_DOT[status] || STATUS_DOT.active} opacity-80`} />
+        <div className={`h-1.5 w-full ${STATUS_DOT[status] || STATUS_DOT.active}`} />
         
         <div className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-start gap-3.5 min-w-0">
             <button
               onClick={onBackToProjects}
-              className="flex items-center justify-center p-2 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl text-slate-600 transition-colors shadow-3xs active:scale-[0.98] shrink-0"
+              className="p-2 bg-slate-100 hover:bg-slate-200 border-2 border-slate-300 rounded-lg text-slate-700 transition-colors shrink-0 cursor-pointer"
               title="Quay lại danh sách dự án"
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="w-4 h-4 text-slate-800 font-bold" />
             </button>
             <div className="min-w-0 space-y-1">
-              <h1 className="text-base font-bold text-slate-900 tracking-tight truncate leading-tight">{project.name}</h1>
-              <p className="text-[11px] text-slate-500 font-medium line-clamp-2 leading-relaxed">
+              <h1 className="text-lg font-bold text-slate-900 tracking-tight truncate leading-tight">{project.name}</h1>
+              <p className="text-xs text-slate-500 font-normal line-clamp-2 leading-relaxed">
                 {project.description || 'Chưa cập nhật mục tiêu và phạm vi công việc của dự án này.'}
               </p>
             </div>
@@ -62,36 +62,31 @@ export default function Workspace({ project, onBackToProjects }) {
 
           {/* Project metadata badges */}
           <div className="flex flex-wrap gap-2 items-center md:self-center shrink-0">
-            <span className={`inline-flex items-center gap-1.5 text-[10px] font-black px-3 py-1 rounded-full border uppercase tracking-wider ${STATUS_STYLE[status] || STATUS_STYLE.active}`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[status]}`} />
-              {STATUS_LABEL[status] || 'Đang thực hiện'}
+            <span className={`text-xs font-bold px-3 py-1 rounded-md border-2 ${
+              status === 'active' ? 'bg-indigo-50 text-indigo-800 border-indigo-300' :
+              status === 'paused' ? 'bg-amber-50 text-amber-800 border-amber-300' : 'bg-emerald-50 text-emerald-800 border-emerald-300'
+            }`}>
+              ● {STATUS_LABEL[status] || 'Đang thực hiện'}
             </span>
             
-            <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 bg-slate-50 border border-slate-200/60 px-3 py-1 rounded-full">
-              <Calendar className="w-3.5 h-3.5 text-slate-400" /> 
+            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700 bg-slate-100 border-2 border-slate-300 px-3 py-1 rounded-md">
+              <Calendar className="w-3.5 h-3.5 text-slate-500" /> 
               <span>
                 {project.durationWeeks ? `${project.durationWeeks} tuần (${project.totalDays || project.durationWeeks * 7} ngày)` : project.totalDays ? `${project.totalDays} ngày` : 'Chưa đặt thời gian'}
               </span>
             </div>
 
-            <div className="flex items-center gap-1.5 text-[10px] font-extrabold text-slate-700 bg-slate-50 border border-slate-200/60 px-3 py-1 rounded-full uppercase tracking-wider">
-              {hasBudget ? (
-                <span>
-                  {Number(project.budget).toLocaleString()} đ
-                </span>
-              ) : (
-                <span className="text-slate-400 font-semibold flex items-center gap-0.5 lowercase normal-case">
-                  <ShieldCheck className="w-3.5 h-3.5 text-slate-350" />
-                  bảo mật
-                </span>
-              )}
-            </div>
+            {hasBudget && (
+              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 bg-slate-100 border-2 border-slate-300 px-3 py-1 rounded-md">
+                <span>{Number(project.budget).toLocaleString()} đ</span>
+              </div>
+            )}
           </div>
         </div>
       </header>
 
       {/* TAB NAVIGATION */}
-      <nav className="flex bg-slate-200/50 p-1.5 rounded-xl border border-slate-200/40 w-full sm:w-fit overflow-x-auto gap-1" aria-label="Phân hệ dự án">
+      <nav className="flex bg-slate-100 p-1.5 rounded-xl border-2 border-slate-300 w-full sm:w-fit overflow-x-auto gap-1" aria-label="Phân hệ dự án">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -99,13 +94,13 @@ export default function Workspace({ project, onBackToProjects }) {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                 isActive
-                  ? 'bg-white text-indigo-700 shadow-sm border border-slate-200/40'
-                  : 'text-slate-500 hover:text-slate-900'
+                  ? 'bg-white text-indigo-900 border-2 border-indigo-300 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 border-2 border-transparent'
               }`}
             >
-              <Icon className={`w-4 h-4 ${isActive ? 'text-indigo-600' : 'text-slate-400'}`} />
+              <Icon className={`w-4 h-4 ${isActive ? 'text-indigo-600' : 'text-slate-500'}`} />
               <span>{tab.label}</span>
             </button>
           );

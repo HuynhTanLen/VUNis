@@ -5,11 +5,11 @@
 const labelRepo = require('./label.repository');
 const labelMapper = require('./label.mapper');
 const { LabelNotFoundError } = require('./label.error');
-const Project = require('../projects/project.schema');
+const prisma = require('../../config/prisma');
 const { NotFoundError } = require('../../shared/errors/AppError');
 
 const getByProject = async (projectId) => {
-    const projectExists = await Project.findById(projectId);
+    const projectExists = await prisma.project.findUnique({ where: { id: projectId } });
     if (!projectExists) throw new NotFoundError('Dự án');
 
     const list = await labelRepo.findByProjectId(projectId);
@@ -17,13 +17,13 @@ const getByProject = async (projectId) => {
 };
 
 const createLabel = async (dto) => {
-    const projectExists = await Project.findById(dto.projectId);
+    const projectExists = await prisma.project.findUnique({ where: { id: dto.projectId } });
     if (!projectExists) throw new NotFoundError('Dự án');
 
     const lbl = await labelRepo.create({
         name: dto.name,
         color: dto.color,
-        project: dto.projectId
+        projectId: dto.projectId
     });
 
     return labelMapper.toLabelResponse(lbl);

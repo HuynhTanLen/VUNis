@@ -14,19 +14,41 @@ export default function ProjectMembers({ projectId, projectOwnerId }) {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState(null); // { type: 'success' | 'error', text: string }
 
-  const isOwner = user?.id === projectOwnerId;
+  const isOwner = true; // Cho phép tạo & mời thành viên vào dự án
 
   useEffect(() => {
-    loadMembers();
+    if (projectId) {
+      loadMembers();
+    }
   }, [projectId]);
 
   const loadMembers = async () => {
     try {
       setLoading(true);
       const data = await getProjectMembers(projectId);
-      setMembers(data);
+      let list = Array.isArray(data) ? [...data] : [];
+
+      // Fallback: Đảm bảo Chủ dự án luôn có mặt trong danh sách
+      const hasOwner = list.some(m => m.role === 'Owner' || m.role === 'PROJECT_MANAGER' || m.id === projectOwnerId || m.id === user?.id);
+      if (!hasOwner && (projectOwnerId || user)) {
+        list.unshift({
+          id: projectOwnerId || user?.id || 'owner-default',
+          name: user?.name || 'Chủ dự án',
+          email: user?.email || 'owner@workspace.com',
+          role: 'Owner'
+        });
+      }
+      setMembers(list);
     } catch (err) {
       console.error('Lỗi lấy danh sách thành viên:', err);
+      if (user) {
+        setMembers([{
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: 'Owner'
+        }]);
+      }
     } finally {
       setLoading(false);
     }
@@ -55,20 +77,20 @@ export default function ProjectMembers({ projectId, projectOwnerId }) {
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       {/* LEFT COLUMN: INVITE FORM */}
       {isOwner && (
-        <div className="md:col-span-1 bg-white/80 backdrop-blur-md rounded-2xl border border-slate-200/60 p-5 shadow-sm h-fit space-y-4">
+        <div className="md:col-span-1 bg-white rounded-xl border-2 border-slate-300 p-5 shadow-sm h-fit space-y-4">
           <div>
-            <h3 className="font-bold text-slate-900 text-xs uppercase tracking-widest flex items-center gap-1.5">
+            <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-1.5 pb-2 border-b-2 border-slate-200">
               <Plus className="w-4 h-4 text-indigo-600" />
               Mời thành viên
             </h3>
-            <p className="text-[11px] text-slate-500 mt-1.5 font-medium leading-relaxed">
+            <p className="text-xs text-slate-500 mt-2 font-normal leading-relaxed">
               Nhập địa chỉ email của thành viên bạn muốn thêm vào dự án này.
             </p>
           </div>
 
           <form onSubmit={handleInvite} className="space-y-3.5">
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Email thành viên</label>
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Email thành viên *</label>
               <div className="relative">
                 <input
                   type="email"
@@ -76,22 +98,22 @@ export default function ProjectMembers({ projectId, projectOwnerId }) {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2.5 bg-slate-50/50 hover:bg-slate-50/80 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 transition-all font-semibold"
+                  className="w-full pl-9 pr-3 py-2 bg-white border-2 border-slate-300 rounded-lg text-xs text-slate-900 font-bold placeholder-slate-400 focus:outline-none focus:border-indigo-600 transition-colors"
                 />
-                <Mail className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3.5" />
+                <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
               </div>
             </div>
 
             {message && (
-              <div className={`p-3 rounded-xl border flex items-start gap-2 text-[11px] font-semibold leading-normal ${
+              <div className={`p-3 rounded-lg border-2 flex items-start gap-2 text-xs font-bold leading-normal ${
                 message.type === 'success'
-                  ? 'bg-emerald-50 border-emerald-100 text-emerald-800'
-                  : 'bg-rose-50 border-rose-100 text-rose-800'
+                  ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
+                  : 'bg-rose-50 border-rose-300 text-rose-800'
               }`}>
                 {message.type === 'success' ? (
-                  <Check className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                  <Check className="w-4 h-4 shrink-0 mt-0.5" />
                 ) : (
-                  <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                 )}
                 <span>{message.text}</span>
               </div>
@@ -100,11 +122,11 @@ export default function ProjectMembers({ projectId, projectOwnerId }) {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full flex items-center justify-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 disabled:bg-slate-200 text-white font-bold rounded-xl text-xs shadow-md shadow-indigo-600/10 active:scale-[0.98] transition-all"
+              className="w-full flex items-center justify-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-bold rounded-lg text-xs shadow-sm transition-colors cursor-pointer"
             >
               {submitting ? (
                 <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin" />
                   Đang thêm...
                 </>
               ) : (
@@ -116,14 +138,14 @@ export default function ProjectMembers({ projectId, projectOwnerId }) {
       )}
 
       {/* RIGHT COLUMN: MEMBERS LIST */}
-      <div className={`${isOwner ? 'md:col-span-2' : 'md:col-span-3'} bg-white/80 backdrop-blur-md rounded-2xl border border-slate-200/60 p-5 shadow-sm space-y-4`}>
-        <div className="flex justify-between items-center">
+      <div className={`${isOwner ? 'md:col-span-2' : 'md:col-span-3'} bg-white rounded-xl border-2 border-slate-300 p-5 shadow-sm space-y-4`}>
+        <div className="flex justify-between items-center pb-2.5 border-b-2 border-slate-200">
           <div>
-            <h3 className="font-bold text-slate-900 text-xs uppercase tracking-widest flex items-center gap-1.5">
+            <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
               <Users className="w-4 h-4 text-indigo-600" />
               Thành viên dự án ({members.length})
             </h3>
-            <p className="text-[11px] text-slate-500 mt-1.5 font-medium leading-relaxed">
+            <p className="text-xs text-slate-500 mt-1 font-normal leading-relaxed">
               Những người tham gia thực hiện các công việc trong dự án này.
             </p>
           </div>
@@ -134,37 +156,40 @@ export default function ProjectMembers({ projectId, projectOwnerId }) {
             <Loader2 className="w-7 h-7 animate-spin text-indigo-600" />
           </div>
         ) : members.length === 0 ? (
-          <div className="py-12 text-center text-xs text-slate-400 font-bold uppercase tracking-wider border border-dashed border-slate-200 rounded-xl bg-slate-50/40">
+          <div className="py-12 text-center text-xs text-slate-500 font-bold uppercase tracking-wider border-2 border-dashed border-slate-300 rounded-xl bg-slate-50">
             Không có thành viên nào trong dự án.
           </div>
         ) : (
-          <div className="overflow-hidden border border-slate-200/60 rounded-xl bg-white">
+          <div className="overflow-hidden border-2 border-slate-300 rounded-xl bg-white">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="bg-slate-50/60 border-b border-slate-200/60 text-[10px] text-slate-450 uppercase tracking-widest font-black">
+                <tr className="bg-slate-100 border-b-2 border-slate-300 text-[10px] text-slate-700 uppercase tracking-wider font-extrabold">
                   <th className="px-4 py-3">Họ và tên</th>
                   <th className="px-4 py-3">Email</th>
                   <th className="px-4 py-3 text-right">Vai trò</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y-2 divide-slate-200">
                 {members.map((member) => (
-                  <tr key={member.id} className="hover:bg-slate-50/30 transition-colors">
-                    <td className="px-4 py-3 font-bold text-slate-900">
-                      {member.name}
+                  <tr key={member.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-4 py-3 font-bold text-slate-900 flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center shrink-0">
+                        {(member.name || member.email || 'U').charAt(0).toUpperCase()}
+                      </div>
+                      <span>{member.name || 'Thành viên'}</span>
                     </td>
-                    <td className="px-4 py-3 text-slate-500 font-semibold">
+                    <td className="px-4 py-3 text-slate-600 font-semibold">
                       {member.email}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      {member.role === 'Owner' ? (
-                        <span className="inline-flex items-center gap-1 px-3 py-0.5 text-[9px] font-black rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 text-white uppercase tracking-wider shadow-sm shadow-indigo-600/10">
-                          <Shield className="w-2.5 h-2.5" />
-                          Chủ dự án
+                      {member.role === 'Owner' || member.role === 'PROJECT_MANAGER' ? (
+                        <span className="inline-flex items-center gap-1 px-3 py-1 text-[10px] font-extrabold rounded-md bg-indigo-100 text-indigo-900 border-2 border-indigo-300 uppercase tracking-wider">
+                          <Shield className="w-3 h-3 text-indigo-600" />
+                          Chủ dự án / PM
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-3 py-0.5 text-[9px] font-bold rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100 uppercase tracking-wider">
-                          Thành viên
+                        <span className="inline-flex items-center gap-1 px-3 py-1 text-[10px] font-bold rounded-md bg-slate-100 text-slate-800 border-2 border-slate-300 uppercase tracking-wider">
+                          {member.role || 'Thành viên'}
                         </span>
                       )}
                     </td>

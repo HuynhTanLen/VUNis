@@ -1,57 +1,80 @@
-const Project = require('./project.schema');
+const prisma = require('../../config/prisma');
 
 const findProjectsByOwner = (userId) => {
-    return Project.find({
-        $or: [
-            { owner: userId },
-            { members: userId }
-        ]
-    })
-     .select('name description budget durationWeeks startDate endDate status priority owner members createdAt')
-    .populate('owner', 'name email role')
-    .populate('members', 'name email avatar jobTitle')
-    .lean();
+    return prisma.project.findMany({
+        where: {
+            OR: [
+                { ownerId: userId },
+                { members: { some: { userId } } }
+            ]
+        },
+        select: {
+            id: true, name: true, description: true, budget: true, durationWeeks: true, startDate: true, endDate: true, status: true, priority: true, ownerId: true, createdAt: true,
+            owner: { select: { id: true, name: true, email: true, role: true } },
+            members: { select: { user: { select: { id: true, name: true, email: true, avatar: true, jobTitle: true } } } }
+        },
+        orderBy: { createdAt: 'desc' }
+    });
 };
 
 const findProjectById = (projectId) => {
-    return Project.findById(projectId)
-    .populate('owner', 'name email role')
-    .populate('members', 'name email role')
-    .lean();
+    return prisma.project.findUnique({
+        where: { id: projectId },
+        include: {
+            owner: { select: { id: true, name: true, email: true, role: true, avatar: true } },
+            members: {
+                include: {
+                    user: { select: { id: true, name: true, email: true, role: true, avatar: true } }
+                }
+            }
+        }
+    });
 };
 
 const createProject = (projectData) => {
-    return Project.create(projectData);
+    return prisma.project.create({ data: projectData });
 };
 
 const updateProject = (projectId, updateData) => {
-    return Project.findByIdAndUpdate(
-        projectId,
-        { $set: updateData },
-        { new: true }
-    ).populate('owner', 'name email role').populate('members', 'name email role');
+    return prisma.project.update({
+        where: { id: projectId },
+        data: updateData,
+        include: {
+            owner: { select: { id: true, name: true, email: true, role: true } },
+            members: { select: { user: { select: { id: true, name: true, email: true, role: true } } } }
+        }
+    });
 };
 
 const deleteProject = (projectId) => {
-    return Project.findByIdAndDelete(projectId);
+    return prisma.project.delete({ where: { id: projectId } });
 };
 
 const findAllProjects = () => {
-    return Project.find()
-    .populate('owner', 'name email role')
-    .populate('members', 'name email role')
-    .lean();
+    return prisma.project.findMany({
+        include: {
+            owner: { select: { id: true, name: true, email: true, role: true } },
+            members: { select: { user: { select: { id: true, name: true, email: true, role: true } } } }
+        },
+        orderBy: { createdAt: 'desc' }
+    });
 };
 
-const findRootProjects = () =>{
-    return Project.find({parentId: null})
-           .populate('owner', 'name email avatar')
-           .sort({createdAt: -1})
-}
+const findRootProjects = () => {
+    return prisma.project.findMany({
+        where: { parentId: null },
+        include: { owner: { select: { id: true, name: true, email: true, avatar: true } } },
+        orderBy: { createdAt: 'desc' }
+    });
+};
 
-const findSubProjects = (parentProjectId) =>{
-    return Project.find({parentId: parentProjectId}).populate('owner', 'name email avatar').sort({createdAt: -1})
-}
+const findSubProjects = (parentProjectId) => {
+    return prisma.project.findMany({
+        where: { parentId: parentProjectId },
+        include: { owner: { select: { id: true, name: true, email: true, avatar: true } } },
+        orderBy: { createdAt: 'desc' }
+    });
+};
 
 module.exports = {
     findProjectsByOwner,

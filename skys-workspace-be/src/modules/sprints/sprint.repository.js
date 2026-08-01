@@ -1,23 +1,29 @@
-const Sprint = require('./sprint.schema');
+const prisma = require('../../config/prisma');
 
 const findSprintsByProject = (projectId) => {
-    return Sprint.find({ projectId: projectId }).sort({ createdAt: -1 });
+    return prisma.sprint.findMany({
+        where: { projectId: projectId },
+        orderBy: { createdAt: 'desc' }
+    });
 };
 
 const findSprintById = (sprintId) => {
-    return Sprint.findById(sprintId);
+    return prisma.sprint.findUnique({
+        where: { id: sprintId }
+    });
 };
 
 const createSprint = (sprintData) => {
-    return Sprint.create(sprintData);
+    return prisma.sprint.create({
+        data: sprintData
+    });
 };
 
 const updateSprintStatus = (sprintId, status) => {
-    return Sprint.findByIdAndUpdate(
-        sprintId,
-        { $set: {status} },
-        { new: true }
-    );
+    return prisma.sprint.update({
+        where: { id: sprintId },
+        data: { status: status }
+    });
 };
 
 module.exports = {

@@ -11,7 +11,7 @@ const toProjectResponse = (project, hideBudget = false) => {
     }
 
     return {
-        id: project._id,
+        id: project.id,
         name: project.name,
         description: project.description,
         budget: hideBudget ? undefined : (project.budget ? Number(project.budget.toString()) : 0),
@@ -21,16 +21,24 @@ const toProjectResponse = (project, hideBudget = false) => {
         totalDays,
         status: project.status,
         priority: project.priority,
-        owner: project.owner && typeof project.owner === 'object' && project.owner._id ? {
-            id: project.owner._id,
+        owner: project.owner && typeof project.owner === 'object' && project.owner.id ? {
+            id: project.owner.id,
             name: project.owner.name,
             email: project.owner.email,
             role: project.owner.role
         } : project.owner,
         members: Array.isArray(project.members) ? project.members.map(m => {
-            if (m && typeof m === 'object' && m._id) {
+            if (m && typeof m === 'object' && m.user && m.user.id) {
                 return {
-                    id: m._id,
+                    id: m.user.id,
+                    name: m.user.name,
+                    email: m.user.email,
+                    role: m.role || m.user.role
+                };
+            } else if (m && typeof m === 'object' && m.id) {
+                // Backward compatibility if it's already a user object
+                return {
+                    id: m.id,
                     name: m.name,
                     email: m.email,
                     role: m.role

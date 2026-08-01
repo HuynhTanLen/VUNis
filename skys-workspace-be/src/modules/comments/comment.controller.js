@@ -15,7 +15,7 @@ const getCommentsByTask = asyncHandler(async (req, res) => {
 
 const createComment = asyncHandler(async (req, res) => {
     const dto = new CreateCommentDTO(req.body).validate();
-    const comment = await commentService.create(dto, req.user._id || req.user.userId);
+    const comment = await commentService.create(dto, req.user.id || req.user.userId);
     res.status(201).json(comment);
 });
 

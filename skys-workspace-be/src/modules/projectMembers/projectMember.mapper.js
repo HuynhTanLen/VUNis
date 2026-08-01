@@ -8,18 +8,20 @@ const {getTeamTypeByRole} = require('../../shared/constants/teamRoles');
 const toProjectMemberResponse = (member) => {
     if (!member) return null;
 
+    const userObj = member.user && typeof member.user === 'object' ? member.user : {};
+
     return {
-        id: member._id,
-        user: member.user && typeof member.user === 'object' && member.user._id ? {
-            id: member.user._id,
-            name: member.user.name,
-            email: member.user.email,
-            avatar: member.user.avatar,
-        } : member.user,
-        projectId: member.project?._id || member.project,
-        role: member.role,
-        teamType: getTeamTypeByRole(member.role),
-        status: member.status,
+        id: userObj.id || member.userId || member.id,
+        memberId: member.id,
+        userId: userObj.id || member.userId,
+        name: userObj.name || 'Thành viên',
+        email: userObj.email || '',
+        avatar: userObj.avatar || '',
+        user: userObj,
+        projectId: member.project?.id || member.projectId,
+        role: member.role || 'MEMBER',
+        teamType: getTeamTypeByRole(member.role || 'MEMBER'),
+        status: member.status || 'accepted',
         joinedAt: member.joinedAt || member.createdAt
     };
 };

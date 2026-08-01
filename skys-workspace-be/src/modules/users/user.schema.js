@@ -1,9 +1,8 @@
 /**
  * @file user.schema.js
- * @description Mongoose Schema cho bảng User trong module Users độc lập.
- * Chuẩn thông tin Jira: Đăng ký cơ bản (name, email, password), sau đó bổ sung jobTitle, department, company.
+ * @description Định nghĩa các Hằng số & Enum cho User trong kiến trúc PostgreSQL Prisma.
+ * LƯU Ý: Đã loại bỏ hoàn toàn Mongoose. Mô hình Cơ sở dữ liệu hiện tại được quản lý trong prisma/schema.prisma.
  */
-const mongoose = require('mongoose');
 
 const ADMIN_ROLES = {
     SUPER_ADMIN: 'SUPER_ADMIN',
@@ -14,89 +13,13 @@ const ADMIN_ROLES = {
     USER: 'USER'
 };
 
-const userSchema = new mongoose.Schema({
-    // Thông tin đăng ký cơ bản (Basic Sign-up)
-    name: {
-        type: String,
-        required: [true, 'Họ và tên là bắt buộc'],
-        trim: true
-    },
-    email: {
-        type: String,
-        required: [true, 'Email là bắt buộc'],
-        unique: true,
-        lowercase: true,
-        trim: true,
-        validate: {
-            validator: function(v) {
-                return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-            },
-            message: props => `${props.value} không phải là email hợp lệ!`
-        }
-    },
-    password: {
-        type: String,
-        required: [true, 'Mật khẩu là bắt buộc'],
-        minlength: [6, 'Mật khẩu phải có ít nhất 6 ký tự']
-    },
-    
-    jobTitle: {
-        type: String,
-        default: null,
-        trim: true
-    },
-    department: {
-        type: String,
-        default: null,
-        trim: true
-    },
-    company: {
-        type: String,
-        default: null,
-        trim: true
-    },
-    avatar: {
-        type: String,
-        default: null
-    },
-    phone: {
-        type: String,
-        default: null,
-        trim: true
-    },
-    
-    // Phân quyền Admin Google Workspace & Quản lý trạng thái
-    role: {
-        type: String,
-        enum: Object.values(ADMIN_ROLES),
-        default: ADMIN_ROLES.USER
-    },
-    status: {
-        type: String,
-        enum: ['online', 'offline', 'inactive_long', 'suspended'],
-        default: 'offline'
-    },
-    isBlocked: {
-        type: Boolean,
-        default: false
-    },
-    lastActiveAt: {
-        type: Date,
-        default: Date.now
-    },
-    resetPasswordToken: {
-        type: String,
-        default: null
-    },
-    resetPasswordExpire: {
-        type: Date,
-        default: null
-    }
-}, {
-    timestamps: true
-});
+const USER_STATUS = {
+    ONLINE: 'online',
+    OFFLINE: 'offline',
+    SUSPENDED: 'suspended'
+};
 
-const User = mongoose.models.User || mongoose.model('User', userSchema);
-User.ADMIN_ROLES = ADMIN_ROLES;
-
-module.exports = User;
+module.exports = {
+    ADMIN_ROLES,
+    USER_STATUS
+};

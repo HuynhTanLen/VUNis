@@ -7,15 +7,15 @@ const toAttachmentResponse = (att) => {
     if (!att) return null;
 
     return {
-        id: att._id,
+        id: att.id,
         filename: att.filename,
         originalName: att.originalName,
         url: att.url,
         size: att.size,
         mimeType: att.mimeType,
-        taskId: att.task?._id || att.task,
-        uploader: att.uploader && typeof att.uploader === 'object' && att.uploader._id ? {
-            id: att.uploader._id,
+        taskId: att.task?.id || att.taskId || att.task,
+        uploader: att.uploader && typeof att.uploader === 'object' && att.uploader.id ? {
+            id: att.uploader.id,
             name: att.uploader.name,
             email: att.uploader.email
         } : att.uploader,

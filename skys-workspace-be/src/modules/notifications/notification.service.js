@@ -4,7 +4,7 @@
  */
 const notifRepo = require('./notification.repository');
 const notifMapper = require('./notification.mapper');
-const Project = require('../projects/project.schema')
+const prisma = require('../../config/prisma');
 const { NotificationNotFoundError } = require('./notification.error');
 
 const getUserNotifications = async (userId) => {
@@ -15,44 +15,45 @@ const getUserNotifications = async (userId) => {
 const sendNotification = async (dto) => {
     const notif = await notifRepo.create({
         message: dto.message,
-        type: dto.type,
-        receiver: dto.receiverId,
-        relatedProject: dto.relatedProject,
-        relatedTask: dto.relatedTask
+        title: dto.title || dto.type || 'Notification',
+        receiverId: dto.receiverId,
+        link: dto.link || null
     });
     return notifMapper.toNotificationResponse(notif);
 };
 
-const sendNotificationBulk = async(notifArray) =>{
-    const project = await Project.findById(projectId);
-    if(!project) throw new ProjectNotFoundError();
+const sendNotificationBulk = async (projectId, senderId, message, type) => {
+    const project = await prisma.project.findUnique({
+        where: { id: projectId },
+        include: { members: true }
+    });
+    if (!project) throw new Error('ProjectNotFoundError');
     
-    const receiverId = new Set();
-    if(project.owner) receiverId.add(project.owner.toString());
+    const receiverIds = new Set();
+    if (project.ownerId) receiverIds.add(project.ownerId);
 
-    if(Array.isArray(project.members)){
-        project.members.forEach( m =>{
-            const memberId = m.userId ? m.userId.toString() : m.toString();
-            if(memberId) receiverId.add(memberId);
+    if (Array.isArray(project.members)) {
+        project.members.forEach(m => {
+            const memberId = m.userId;
+            if (memberId) receiverIds.add(memberId);
         });
     }
 
-    receiverId.delete(senderId.toString());
+    receiverIds.delete(senderId);
 
-    const notifDocs = Array.from(receiverId).map(receiverId =>({
-        message,
-        type,
-        receiver: receiverId,
-        relatedProject: projectId,
+    const notifDocs = Array.from(receiverIds).map(receiverId => ({
+        message: message,
+        title: type || 'Notification',
+        receiverId: receiverId,
         isRead: false
     }));
 
-    if(notifDocs.length > 0){
+    if (notifDocs.length > 0) {
         await notifRepo.createMany(notifDocs);
     }
     
-    return {message: `Đã gửi thông báo đến ${notifDocs.length} thành viên trong dự án.`};
-}
+    return { message: `Đã gửi thông báo đến ${notifDocs.length} thành viên trong dự án.` };
+};
 
 const markRead = async (id) => {
     const updated = await notifRepo.markAsRead(id);

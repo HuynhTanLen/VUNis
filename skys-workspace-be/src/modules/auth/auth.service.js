@@ -6,12 +6,18 @@
 const authRepo = require('./auth.repository');
 const authMapper = require('./auth.mapper');
 const { EmailExistsError, InvalidCredentialsError, UserNotFoundError } = require('./auth.error');
-const UserStatusLog = require('../userStatusLog/userStatusLog.schema');
+const prisma = require('../../config/prisma');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const env = require('../../config/env');
-const User = require('./auth.schema');
+const crypto = require('crypto');
 const sendEmail = require('../../shared/utils/sendEmail');
+
+const SYSTEM_ROLES = {
+    SUPER_ADMIN: 'SUPER_ADMIN',
+    ADMIN: 'ADMIN',
+    USER: 'USER'
+};
 
 /**
  * Đăng ký tài khoản mới.
@@ -22,8 +28,8 @@ const register = async (dto) => {
     const userExists = await authRepo.findByEmail(dto.email);
     if (userExists) throw new EmailExistsError();
 
-    const countUsers = await User.countDocuments();
-    const defaultRole = countUsers === 0 ? User.ADMIN_ROLES.SUPER_ADMIN : User.ADMIN_ROLES.USER;
+    const countUsers = await authRepo.countUsers();
+    const defaultRole = countUsers === 0 ? SYSTEM_ROLES.SUPER_ADMIN : SYSTEM_ROLES.USER;
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(dto.password, salt);
@@ -33,7 +39,11 @@ const register = async (dto) => {
         email: dto.email,
         password: hashedPassword,
         role: defaultRole,
-        status: 'offline'
+        status: 'offline',
+        phone: dto.phone || null,
+        jobTitle: dto.jobTitle || 'Software Engineer',
+        department: dto.department || 'Engineering',
+        company: dto.company || 'KS Organization'
     });
 
     return authMapper.toUserResponse(newUser);
@@ -56,21 +66,22 @@ const login = async (dto, reqMeta = {}) => {
     if (!isMatch) throw new InvalidCredentialsError();
 
     // Cập nhật trạng thái người dùng
-    user.status = 'online';
-    user.lastActiveAt = new Date();
-    await user.save();
+    await prisma.user.update({
+        where: { id: user.id },
+        data: { status: 'online', lastActiveAt: new Date() }
+    });
 
     // Ghi nhật ký đăng nhập (UserStatusLog) để theo dõi
-    await UserStatusLog.create({
-        userId: user._id,
-        action: 'LOGIN',
-        ipAddress: reqMeta.ip || null,
-        userAgent: reqMeta.userAgent || null
+    await prisma.userStatusLog.create({
+        data: {
+            userId: user.id,
+            status: 'LOGIN'
+        }
     });
 
     const token = jwt.sign(
         {
-            userId: user._id,
+            userId: user.id,
             email: user.email,
             role: user.role
         },
@@ -87,12 +98,16 @@ const login = async (dto, reqMeta = {}) => {
 const logout = async (userId) => {
     const user = await authRepo.findById(userId);
     if (user) {
-        user.status = 'offline';
-        await user.save();
+        await prisma.user.update({
+            where: { id: userId },
+            data: { status: 'offline' }
+        });
 
-        await UserStatusLog.create({
-            userId: user._id,
-            action: 'LOGOUT'
+        await prisma.userStatusLog.create({
+            data: {
+                userId: user.id,
+                status: 'LOGOUT'
+            }
         });
     }
     return { message: 'Đăng xuất thành công' };
@@ -119,7 +134,7 @@ const changeUserRole = async (currentUserId, targetUserId, newRole) => {
         throw error;
     }
 
-    const validRoles = Object.values(User.ADMIN_ROLES);
+    const validRoles = Object.values(SYSTEM_ROLES);
     if (!validRoles.includes(newRole)) {
         const error = new Error(`Vai trò không hợp lệ. Danh sách hợp lệ: ${validRoles.join(', ')}`);
         error.statusCode = 400;
@@ -131,9 +146,11 @@ const changeUserRole = async (currentUserId, targetUserId, newRole) => {
 
     const updatedUser = await authRepo.updateUserRole(targetUserId, newRole);
 
-    await UserStatusLog.create({
-        userId: targetUserId,
-        action: 'ROLE_CHANGED'
+    await prisma.userStatusLog.create({
+        data: {
+            userId: targetUserId,
+            status: 'ROLE_CHANGED'
+        }
     });
 
     return authMapper.toUserResponse(updatedUser);
@@ -152,7 +169,7 @@ const toggleBlockUser = async (currentUserId, targetUserId, isBlocked) => {
     const targetUser = await authRepo.findById(targetUserId);
     if (!targetUser) throw new UserNotFoundError();
 
-    if (targetUser.role === User.ADMIN_ROLES.SUPER_ADMIN) {
+    if (targetUser.role === SYSTEM_ROLES.SUPER_ADMIN) {
         const error = new Error('Không thể khóa tài khoản SUPER_ADMIN');
         error.statusCode = 403;
         throw error;
@@ -160,9 +177,11 @@ const toggleBlockUser = async (currentUserId, targetUserId, isBlocked) => {
 
     const updatedUser = await authRepo.toggleBlockUser(targetUserId, isBlocked);
 
-    await UserStatusLog.create({
-        userId: targetUserId,
-        action: isBlocked ? 'BLOCKED' : 'UNBLOCKED'
+    await prisma.userStatusLog.create({
+        data: {
+            userId: targetUserId,
+            status: isBlocked ? 'BLOCKED' : 'UNBLOCKED'
+        }
     });
 
     return authMapper.toUserResponse(updatedUser);
@@ -178,7 +197,7 @@ const removeUser = async (currentUserId, targetUserId) => {
     const targetUser = await authRepo.findById(targetUserId);
     if (!targetUser) throw new UserNotFoundError();
 
-    if (targetUser.role === User.ADMIN_ROLES.SUPER_ADMIN) {
+    if (targetUser.role === SYSTEM_ROLES.SUPER_ADMIN) {
         const error = new Error('Không thể xóa tài khoản SUPER_ADMIN hệ thống');
         error.statusCode = 403;
         throw error;
@@ -190,14 +209,13 @@ const removeUser = async (currentUserId, targetUserId) => {
 
 const forgotPassword = async (email) => {
     const user = await authRepo.findByEmail(email);
-    if (!user) {
-
-        const resetToken = Math.floor(100000 + Math.random() * 900000).toString();
+    if (user) {
+        const resetOTP = Math.floor(100000 + Math.random() * 900000).toString();
         
-        user.resetPasswordToken = crypto.createHasg('sha256').update(resetOTP).digest('hex');
-        user.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
+        const hashedToken = crypto.createHash('sha256').update(resetOTP).digest('hex');
+        const expireDate = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-        await user.save();
+        await authRepo.setResetToken(user.id, hashedToken, expireDate);
 
         const htmlContent = `
         <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f5;">
@@ -212,10 +230,11 @@ const forgotPassword = async (email) => {
         await sendEmail({
             email: user.email,
             subject: 'Mã OTP khôi phục mật khẩu - KS Team',
+            message: `Mã này có hiệu lực trong vòng 10 phút.`,
             html: htmlContent
-        })
-
+        });
     }
+    
     return {
         message: 'Mã OTP khôi phục mật khẩu đã được gửi, vui lòng kiểm tra email của bạn (hoặc console server)'
     };
@@ -224,29 +243,28 @@ const forgotPassword = async (email) => {
 const resetPassword = async (email, token, newPassword) => {
     const user = await authRepo.findByEmail(email);
     if (!user) {
-        const error = new Error('Mã OTP không hợp lệ hoặc đã hết hạn');
+        const error = new Error('Người dùng không tồn tại');
         error.statusCode = 400;
         throw error;
     }
 
-    const hashedOTP = crypto.createHasg('sha256').update(resetOTP).digest('hex');
-     if (!user.resetPasswordToken || user.resetPasswordToken !== hashedOTP || user.resetPasswordExpire < Date.now()) {
-        const error = new Error('Mã OTP không hợp lệ hoặc đã hết hạn');
-        error.statusCode = 400;
-        throw error;
+    const hashedOTP = crypto.createHash('sha256').update(token).digest('hex');
+    const validUser = await authRepo.findByValidResetToken(hashedOTP);
+
+    if (!validUser || validUser.id !== user.id) {
+        const err = new Error('OTP invalid or expired');
+        err.statusCode = 400;
+        throw err;
     }
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(newPassword, salt);
 
-    user.resetPasswordToken = null;
-    user.resetPasswordExpire = null;
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await authRepo.updatePassword(user.id, hashedPassword);
 
-    await user.save();
-    return { message: 'Thay đổi mật khẩu thành công' };
+    return { message: 'Mật khẩu đã được đặt lại thành công' };  
 };
 
 const getRoles = async () => {
-    return Object.values(User.ADMIN_ROLES);
+    return Object.values(SYSTEM_ROLES);
 };
 
 module.exports = {

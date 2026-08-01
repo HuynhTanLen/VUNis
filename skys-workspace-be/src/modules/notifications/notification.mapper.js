@@ -7,16 +7,11 @@ const toNotificationResponse = (notif) => {
     if (!notif) return null;
 
     return {
-        id: notif._id,
+        id: notif.id,
         message: notif.message,
-        type: notif.type,
-        receiver: notif.receiver && typeof notif.receiver === 'object' && notif.receiver._id ? {
-            id: notif.receiver._id,
-            name: notif.receiver.name,
-            email: notif.receiver.email
-        } : notif.receiver,
-        relatedProject: notif.relatedProject,
-        relatedTask: notif.relatedTask,
+        title: notif.title,
+        receiverId: notif.receiverId,
+        link: notif.link,
         isRead: notif.isRead,
         createdAt: notif.createdAt
     };

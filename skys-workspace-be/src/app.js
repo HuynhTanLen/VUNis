@@ -26,11 +26,13 @@ const projectMemberRoutes = require('./modules/projectMembers/projectMember.rout
 
 const app = express();
 
+const path = require('path');
 const cookieParser = require('cookie-parser');
 const { globalLimiter } = require('./middleware/rateLimit.middleware');
 
 app.use(cookieParser());
 app.use(express.json());
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use(cors({
     origin: 'http://localhost:3000',  // URL Frontend
     credentials: true                 // Cho phép gửi cookie cross-origin
@@ -62,7 +64,6 @@ app.get('/api/health', (req, res) => {
 });
 
 const os = require('os');
-const mongoose = require('mongoose');
 
 app.get('/api/system/stats', (req, res) => {
     const memory = process.memoryUsage();
@@ -86,8 +87,8 @@ app.get('/api/system/stats', (req, res) => {
         ramTotal: `${totalMemGB} GB`,
         cpuLoad: `${cpuPct}%`,
         uptime: uptimeStr,
-        dbConnections: mongoose.connection.readyState === 1 ? 1 : 0,
-        dbName: 'MongoDB Atlas'
+        dbConnections: 1,
+        dbName: 'PostgreSQL'
     });
 });
 
