@@ -8,21 +8,16 @@ const router = express.Router();
 const { getSprints, createSprint, completeSprint,startSprint } = require('./sprint.controller');
 const { protect } = require('../../middleware/auth.middleware');
 const {checkProjectPermission} = require('../../middleware/rbac.middleware');
+const { LEAD_ROLES } = require('../../shared/constants/teamRoles');
 
 router.use(protect);
 
 router.get('/project/:projectId', checkProjectPermission(), getSprints);
 
-router.post('/project/:projectId', checkProjectPermission(
-    'PROJECT_MANAGER', 'FRONTEND_LEAD', 'BACKEND_LEAD', 'DESIGN_LEAD', 'QA_LEAD', 'DEVOPS_LEAD'
-), createSprint);
+router.post('/project/:projectId', checkProjectPermission(...LEAD_ROLES), createSprint);
 
-router.patch('/:id/start', checkProjectPermission(
-    'PROJECT_MANAGER', 'FRONTEND_LEAD', 'BACKEND_LEAD', 'DESIGN_LEAD', 'QA_LEAD', 'DEVOPS_LEAD'
-), startSprint);
+router.patch('/:id/start', checkProjectPermission(...LEAD_ROLES), startSprint);
 
-router.put('/:id/complete', checkProjectPermission(
-    'PROJECT_MANAGER', 'FRONTEND_LEAD', 'BACKEND_LEAD', 'DESIGN_LEAD', 'QA_LEAD', 'DEVOPS_LEAD'
-), completeSprint);
+router.put('/:id/complete', checkProjectPermission(...LEAD_ROLES), completeSprint);
 
 module.exports = router;

@@ -12,17 +12,18 @@ const {
     deleteComment
 } = require('./comment.controller');
 const { protect } = require('../../middleware/auth.middleware');
+const { checkProjectPermission } = require('../../middleware/rbac.middleware');
 
-// Lấy tất cả bình luận theo Task ID
-router.get('/task/:taskId', protect, getCommentsByTask);
+// Lấy tất cả bình luận theo Task ID — mọi thành viên dự án được xem
+router.get('/task/:taskId', protect, checkProjectPermission(), getCommentsByTask);
 
-// Tạo bình luận mới
-router.post('/', protect, createComment);
+// Tạo bình luận mới — mọi thành viên dự án được bình luận
+router.post('/', protect, checkProjectPermission(), createComment);
 
-// Cập nhật bình luận theo ID
-router.put('/:id', protect, updateComment);
+// Cập nhật bình luận theo ID — quyền tác giả/admin được xử lý trong service, ở đây chỉ chặn người ngoài dự án
+router.put('/:id', protect, checkProjectPermission(), updateComment);
 
 // Xóa bình luận theo ID
-router.delete('/:id', protect, deleteComment);
+router.delete('/:id', protect, checkProjectPermission(), deleteComment);
 
 module.exports = router;

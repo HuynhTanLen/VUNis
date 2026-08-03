@@ -32,4 +32,15 @@ const toTaskListResponse = (tasks) => {
     return tasks.map(toTaskResponse);
 };
 
-module.exports = { toTaskResponse, toTaskListResponse };
+const calculateProgress = (subtasks) => {
+      if(!Array.isArray(subtasks)|| subtasks.length === 0) return 0;
+
+      const totalSubTasks = subtasks.length;
+      const completedSubTasks = subtasks.filter(st => st.completed === true).length
+      
+      const per = (completedSubTasks / totalSubTasks) * 100;
+
+      return Math.round(per);
+}
+
+module.exports = { toTaskResponse, toTaskListResponse, calculateProgress };

@@ -18,9 +18,10 @@ const getMembersByProject = async (projectId) => {
     if (!project) throw new NotFoundError('Dự án');
 
     let members = await memberRepo.findByProjectId(projectId);
+    members = (members || []).filter(m => m && m.user && m.user.id);
 
     if (project.owner) {
-        const ownerInMembers = members.some(m => (m.userId === project.owner.id || (m.user && m.user.id === project.owner.id)));
+        const ownerInMembers = members.some(m => (m.userId === project.owner.id || m.user?.id === project.owner.id));
         if (!ownerInMembers) {
             members.unshift({
                 id: `owner-${project.owner.id}`,
@@ -38,18 +39,25 @@ const getMembersByProject = async (projectId) => {
 };
 
 const addMemberToProject = async (dto) => {
-    const projectExists = await prisma.project.findUnique({ where: { id: dto.projectId } });
+    const projectExists = await prisma.project.findUnique({
+        where: { id: dto.projectId },
+        include: { owner: true }
+    });
     if (!projectExists) throw new NotFoundError('Dự án');
 
     const targetUser = await prisma.user.findUnique({ where: { email: dto.email } });
-    if (!targetUser) throw new NotFoundError(`Người dùng có email "${dto.email}"`);
+    if (!targetUser) throw new NotFoundError(`Không tìm thấy tài khoản có email "${dto.email}" trong hệ thống`);
+
+    if (projectExists.ownerId === targetUser.id || projectExists.owner?.id === targetUser.id) {
+        throw new ConflictError('Người dùng này chính là Chủ sở hữu của dự án');
+    }
 
     const existingMember = await memberRepo.findByUserAndProject(targetUser.id, dto.projectId);
     if (existingMember) {
-        throw new ConflictError('Thành viên này đã tham gia vào dự án');
+        throw new ConflictError('Thành viên này đã có trong danh sách dự án');
     }
 
-    const member = await memberRepo.create({
+    await memberRepo.create({
         userId: targetUser.id,
         projectId: dto.projectId,
         role: dto.role || 'MEMBER',
@@ -59,37 +67,33 @@ const addMemberToProject = async (dto) => {
     await prisma.notification.create({
         data: {
             title: 'Lời mời dự án',
-            message: `Bạn vừa được thêm vào dự án "${projectExists.name}" với vai trò ${member.role}.`,
+            message: `Bạn vừa được thêm vào dự án "${projectExists.name}".`,
             receiverId: targetUser.id,
             link: `/projects/${dto.projectId}`
         }
     });
-    
+
     try {
-        const emailHtml = `
-            <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f8fafc; border-radius: 8px;">
-                <h2 style="color: #2563eb;">🎉 Chào mừng bạn đến với dự án "${projectExists.name}"!</h2>
-                <p>Xin chào <b>${targetUser.name}</b>,</p>
-                <p>Bạn vừa được ban quản trị thêm vào dự án <b>${projectExists.name}</b> trên hệ thống <b>KS Platform</b>.</p>
-                <div style="background-color: #ffffff; padding: 15px; border-left: 4px solid #2563eb; margin: 15px 0;">
-                    <p style="margin: 5px 0;"><b>Tên dự án:</b> ${projectExists.name}</p>
-                    <p style="margin: 5px 0;"><b>Vai trò của bạn:</b> <span style="color: #059669; font-weight: bold;">${member.role}</span></p>
+        const sendEmail = require('../../shared/utils/sendEmail');
+        if (typeof sendEmail === 'function') {
+            const emailHtml = `
+                <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f8fafc; border-radius: 8px;">
+                    <h2 style="color: #2563eb;">🎉 Chào mừng bạn đến với dự án "${projectExists.name}"!</h2>
+                    <p>Xin chào <b>${targetUser.name}</b>,</p>
+                    <p>Bạn vừa được ban quản trị thêm vào dự án <b>${projectExists.name}</b> trên hệ thống <b>KS Platform</b>.</p>
                 </div>
-                <p>Đăng nhập ngay để xem danh sách công việc được phân công!</p>
-                <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;">
-                <p style="font-size: 12px; color: #64748b;">Đây là email tự động từ hệ thống KS Platform, vui lòng không phản hồi email này.</p>
-            </div>
-        `;
-        await sendEmail({
-            email: targetUser.email,
-            subject: `[KS Platform] Bạn vừa được thêm vào dự án ${projectExists.name}`,
-            html: emailHtml
-        });
+            `;
+            await sendEmail({
+                email: targetUser.email,
+                subject: `[KS Platform] Bạn vừa được thêm vào dự án ${projectExists.name}`,
+                html: emailHtml
+            });
+        }
     } catch (emailError) {
-        console.error('Lỗi khi gửi email thông báo mời tham gia dự án:', emailError.message);
+        // Ignore optional email sending error
     }
 
-    return memberMapper.toProjectMemberResponse(member);
+    return await getMembersByProject(dto.projectId);
 };
 
 const updateMemberRole = async (id, dto) => {

@@ -15,15 +15,15 @@ const env = {
     DATABASE_URL: process.env.DATABASE_URL,
     JWT_SECRET: process.env.JWT_SECRET,
     NODE_ENV: process.env.NODE_ENV || 'development',
-    ADMIN_EMAIL: process.env.ADMIN_EMAIL || 'admin@ks.com',
-    ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || 'Admin@123',
+    ADMIN_EMAIL: process.env.ADMIN_EMAIL,
+    ADMIN_PASSWORD: process.env.ADMIN_PASSWORD,
 };
 
 // Kiểm tra các biến bắt buộc (Fail-Fast nếu thiếu)
-const requiredVars = ['DATABASE_URL', 'JWT_SECRET'];
+const requiredVars = ['DATABASE_URL', 'JWT_SECRET', 'ADMIN_PASSWORD'];
 requiredVars.forEach((key) => {
     if (!process.env[key]) {
-        console.error(`❌ FATAL ERROR: Biến môi trường bắt buộc "${key}" chưa được cấu hình.`);
+        console.error(`FATAL ERROR: Biến môi trường bắt buộc "${key}" chưa được cấu hình.`);
         process.exit(1);
     }
 });

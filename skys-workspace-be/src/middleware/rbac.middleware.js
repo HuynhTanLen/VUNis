@@ -39,30 +39,51 @@ const authorize = (...allowedRoles) => {
  * - Owner dự án luôn có toàn quyền trong dự án đó.
  * - Thành viên khác được kiểm tra qua ProjectMember.
  * 
- * @param {...string} allowedProjectRoles - Danh sách vai trò dự án được phép (VD: 'Leader', 'Member', 'Viewer')
+ * @param {...string} allowedProjectRoles - Danh sách vai trò dự án được phép (VD: 'PROJECT_MANAGER', 'FRONTEND_LEAD', 'BACKEND_LEAD', ...)
  */
 const checkProjectPermission = (...allowedProjectRoles) => {
     return async (req, res, next) => {
         try {
-            if (!req.user) {
-                return res.status(401).json({ message: 'Chưa xác thực, vui lòng đăng nhập' });
-            }
+            if (!req.user) return res.status(401).json({ message: 'Chưa xác thực'}); 
 
-            // SUPER_ADMIN và SERVICE_ADMIN được phép quản trị toàn bộ dự án
-            if (['SUPER_ADMIN', 'SERVICE_ADMIN'].includes(req.user.role)) {
-                return next();
-            }
+            if (['SUPER_ADMIN', 'SERVICE_ADMIN'].includes(req.user.role)) return next();
 
-            // Tự động tìm projectId
-            let projectId = req.params.projectId || req.body.projectId || req.query.projectId;
-            if (!projectId && req.params.id) {
+            let projectId = req.params?.projectId || req.body?.projectId || req.query?.projectId;
+
+            if (!projectId && req.params?.id) {
                 const projectExists = await prisma.project.findUnique({ where: { id: req.params.id } });
-                if (projectExists) {
-                    projectId = req.params.id;
-                } else {
-                    const task = await prisma.task.findUnique({ where: { id: req.params.id } });
+                if (projectExists) projectId = req.params.id;
+            }
+
+            // taskId có thể nằm ở params (route GET /task/:taskId) HOẶC ở body (route POST tạo comment/attachment)
+            const taskIdCandidate = req.params?.taskId || req.body?.taskId;
+            if (!projectId && taskIdCandidate) {
+                const task = await prisma.task.findUnique({ where: { id: taskIdCandidate } });
+                if (task) projectId = task.projectId;
+            }
+
+            // :id có thể là commentId — Comment không có projectId trực tiếp, phải đi qua Task
+            if (!projectId && req.params?.id) {
+                const comment = await prisma.comment.findUnique({ where: { id: req.params.id } });
+                if (comment) {
+                    const task = await prisma.task.findUnique({ where: { id: comment.taskId } });
                     if (task) projectId = task.projectId;
                 }
+            }
+
+            // :id có thể là attachmentId — cũng phải đi qua Task như Comment
+            if (!projectId && req.params?.id) {
+                const attachment = await prisma.attachment.findUnique({ where: { id: req.params.id } });
+                if (attachment) {
+                    const task = await prisma.task.findUnique({ where: { id: attachment.taskId } });
+                    if (task) projectId = task.projectId;
+                }
+            }
+
+            // :id có thể là labelId — Label CÓ projectId trực tiếp, không cần qua Task
+            if (!projectId && req.params?.id) {
+                const label = await prisma.label.findUnique({ where: { id: req.params.id } });
+                if (label) projectId = label.projectId;
             }
 
             if (!projectId) {

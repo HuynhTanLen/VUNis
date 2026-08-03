@@ -23,6 +23,8 @@ const activityLogRoutes = require('./modules/activityLogs/activityLog.route');
 const attachmentRoutes = require('./modules/attachments/attachment.route');
 const labelRoutes = require('./modules/labels/label.route');
 const projectMemberRoutes = require('./modules/projectMembers/projectMember.route');
+const roleRoutes = require('./modules/roles/role.route');
+const permissionRoutes = require('./modules/permissions/permission.route');
 
 const app = express();
 
@@ -34,8 +36,8 @@ app.use(cookieParser());
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use(cors({
-    origin: 'http://localhost:3000',  // URL Frontend
-    credentials: true                 // Cho phép gửi cookie cross-origin
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    credentials: true                 
 }));
 app.use(logger);
 app.use(globalLimiter);
@@ -52,6 +54,8 @@ app.use('/api/activity-logs', activityLogRoutes);
 app.use('/api/attachments', attachmentRoutes);
 app.use('/api/labels', labelRoutes);
 app.use('/api/project-members', projectMemberRoutes);
+app.use('/api/roles', roleRoutes);
+app.use('/api/permissions', permissionRoutes);
 
 
 // ─── Health & System Stats ─────────────────────────
@@ -65,17 +69,18 @@ app.get('/api/health', (req, res) => {
 
 const os = require('os');
 
-app.get('/api/system/stats', (req, res) => {
+const {protect} = require('./middleware/auth.middleware');
+const {authorize} = require('./middleware/rbac.middleware');
+
+app.get('/api/system/stats', protect, authorize('SUPER_ADMIN'), (req, res) => {
     const memory = process.memoryUsage();
     const heapUsedMB = Math.round(memory.heapUsed / 1024 / 1024);
     const totalMemGB = (os.totalmem() / 1024 / 1024 / 1024).toFixed(2);
-    
-    // CPU Load calculation
+
     const cpus = os.cpus();
     const loadAvg = os.loadavg();
     const cpuPct = Math.min(Math.round((loadAvg[0] || 0.15) * 100 / cpus.length), 99);
-    
-    // Uptime calculation
+
     const uptimeSec = Math.floor(process.uptime());
     const days = Math.floor(uptimeSec / 86400);
     const hours = Math.floor((uptimeSec % 86400) / 3600);

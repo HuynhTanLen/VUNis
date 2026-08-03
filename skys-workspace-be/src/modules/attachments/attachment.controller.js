@@ -14,7 +14,7 @@ const getTaskAttachments = asyncHandler(async (req, res) => {
 
 const uploadAttachment = asyncHandler(async (req, res) => {
     const dto = new CreateAttachmentDTO(req.body).validate();
-    const att = await attService.createAttachment(dto, req.user.userId);
+    const att = await attService.createAttachment(dto, req.user.id);
     res.status(201).json(att);
 });
 

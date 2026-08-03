@@ -10,6 +10,7 @@ const toCommentResponse = (comment) => {
         id: comment.id,
         content: comment.content,
         taskId: comment.task?.id || comment.taskId || comment.task,
+        parentId: comment.parentId || null,
         author: comment.author && typeof comment.author === 'object' && comment.author.id ? {
             id: comment.author.id,
             name: comment.author.name,

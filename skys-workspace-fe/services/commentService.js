@@ -5,8 +5,8 @@ export const getCommentsByTask = async (taskId) => {
     return response.data;
 };
 
-export const createComment = async (taskId, content) => {
-    const response = await api.post('/comments', { taskId, content });
+export const createComment = async (taskId, content, parentId = null) => {
+    const response = await api.post('/comments', { taskId, content, parentId });
     return response.data;
 };
 

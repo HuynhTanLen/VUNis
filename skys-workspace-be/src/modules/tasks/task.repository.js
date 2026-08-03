@@ -24,10 +24,11 @@ const findTaskById = (taskId) => {
 };
 
 const createTask = (taskData) => {
-    const { subtasks, ...data } = taskData;
+    const { subtasks, role, startDate, endDate, ...data } = taskData;
     return prisma.task.create({
         data: {
             ...data,
+            dueDate: endDate || startDate || data.dueDate || null,
             subtasks: subtasks && subtasks.length > 0 ? {
                 create: subtasks.map(st => ({ title: st.title, completed: st.completed || false }))
             } : undefined
@@ -37,10 +38,13 @@ const createTask = (taskData) => {
 };
 
 const updateTask = (taskId, updateData) => {
-    const { subtasks, ...data } = updateData;
+    const { subtasks, role, startDate, endDate, ...data } = updateData;
     return prisma.task.update({
         where: { id: taskId },
-        data,
+        data: {
+            ...data,
+            ...(endDate || startDate ? { dueDate: endDate || startDate } : {})
+        },
         include: {
             assignee: { select: { id: true, name: true, email: true, avatar: true } },
             lead: { select: { id: true, name: true, email: true, avatar: true } },

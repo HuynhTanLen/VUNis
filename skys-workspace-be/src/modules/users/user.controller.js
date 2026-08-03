@@ -4,7 +4,7 @@
  */
 const userService = require('./user.service');
 const { UpdateProfileDTO, ChangeRoleDTO, ToggleBlockDTO } = require('./user.dto');
-const asyncHandler = require('../../shared/asyncHandler');
+const asyncHandler = require('../../shared/constants/asyncHandler');
 
 // System roles constant (replaces User.ADMIN_ROLES from Mongoose schema)
 const SYSTEM_ROLES = {

@@ -14,7 +14,7 @@ const getProjectActivityLogs = asyncHandler(async (req, res) => {
 
 const logActivity = asyncHandler(async (req, res) => {
     const dto = new CreateActivityLogDTO(req.body).validate();
-    const log = await logService.createLog(dto, req.user.userId);
+    const log = await logService.createLog(dto, req.user.id);
     res.status(201).json(log);
 });
 

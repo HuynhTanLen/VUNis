@@ -7,17 +7,26 @@
 const app = require('./src/app');
 const env = require('./src/config/env');
 const connectDatabase = require('./src/config/database');
+const {initSocket} = require('./src/config/socket');
+const http = require('http');
 
 const startServer = async () => {
     // 1. Kết nối Database + Seed dữ liệu mặc định
     await connectDatabase();
 
+    const server = http.createServer(app);
+    initSocket(server);
+
     // 2. Khởi động HTTP Server
-    app.listen(env.PORT, () => {
-        console.log(`🚀 Server đang chạy tại: http://localhost:${env.PORT}`);
-        console.log(`📋 Health check:        http://localhost:${env.PORT}/api/health`);
-        console.log(`🔧 Môi trường:          ${env.NODE_ENV}`);
+    server.listen(env.PORT, () => {
+        console.log(`Server đang chạy tại: http://localhost:${env.PORT}`);
+        console.log(`Health check:        http://localhost:${env.PORT}/api/health`);
+        console.log(`Môi trường:          ${env.NODE_ENV}`);
+        console.log(`Socket.io Server started`);
     });
 };
 
-startServer();
+startServer().catch((err) => {
+    console.error('Lỗi không thể khởi động server:', err);
+    process.exit(1);
+});

@@ -1,13 +1,11 @@
-// Reading this as: Project Management Workspace for team collaborators, with a calm, high-density light minimalist language, leaning toward Tailwind UI + Geist/Outfit + fluid glassmorphism accents.
-// DESIGN_VARIANCE: 5, MOTION_INTENSITY: 4, VISUAL_DENSITY: 7
-
 import { useState, useEffect } from 'react';
 import { getProjects, createProject, delProject, updProject } from '../../services/projectService';
 import Toast from '../ui/Toast';
 import { 
   FolderPlus, Trash2, Calendar, ShieldCheck, 
-  Loader2, Clock, Layers
+  Loader2, Clock, Layers, Filter, CheckCircle2, AlertCircle, X
 } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
 
 const STATUS_OPTIONS = [
   { code: 'active',  label: 'Đang thực hiện' },
@@ -16,20 +14,6 @@ const STATUS_OPTIONS = [
 ];
 
 const STATUS_LABEL = { active: 'Đang thực hiện', paused: 'Tạm dừng', done: 'Hoàn thành' };
-
-const STATUS_STYLE = {
-  active: 'bg-indigo-50 text-indigo-700 border-indigo-100',
-  paused: 'bg-amber-50 text-amber-700 border-amber-100',
-  done:   'bg-emerald-50 text-emerald-700 border-emerald-100',
-};
-
-const STATUS_DOT = {
-  active: 'bg-indigo-500',
-  paused: 'bg-amber-500',
-  done:   'bg-emerald-500',
-};
-
-import { useAuth } from '../../hooks/useAuth';
 
 export default function ProjectDashboard({ onSelectProject }) {
   const { user } = useAuth();
@@ -50,7 +34,7 @@ export default function ProjectDashboard({ onSelectProject }) {
     priority: 'Medium'
   });
   
-  const [editProject, setEditProject] = useState(null); // {id, data}
+  const [editProject, setEditProject] = useState(null);
   const [editDurationUnit, setEditDurationUnit] = useState('weeks');
 
   useEffect(() => { loadProjects(); }, []);
@@ -70,35 +54,6 @@ export default function ProjectDashboard({ onSelectProject }) {
     } finally {
       setLoading(false);
     }
-  };
-
-  const getExpectedEndDate = (startDateStr, duration, unit = 'weeks') => {
-    if (!startDateStr || !duration || isNaN(duration) || duration <= 0) return null;
-    const start = new Date(startDateStr);
-    if (isNaN(start.getTime())) return null;
-    const end = new Date(start);
-    
-    const num = Number(duration);
-    if (unit === 'days') {
-      end.setDate(end.getDate() + num);
-    } else if (unit === 'weeks') {
-      end.setDate(end.getDate() + num * 7);
-    } else if (unit === 'months') {
-      end.setMonth(end.getMonth() + num);
-    } else if (unit === 'quarters') {
-      end.setMonth(end.getMonth() + num * 3);
-    }
-    
-    return end.toLocaleDateString('vi-VN');
-  };
-
-  const getDaysCount = (duration, unit) => {
-    const num = Number(duration);
-    if (unit === 'days') return num;
-    if (unit === 'weeks') return num * 7;
-    if (unit === 'months') return num * 30;
-    if (unit === 'quarters') return num * 90;
-    return 0;
   };
 
   const convertWeeksToDurationAndUnit = (weeks) => {
@@ -124,7 +79,7 @@ export default function ProjectDashboard({ onSelectProject }) {
       id: project.id,
       data: {
         ...project,
-        durationWeeks: duration // Gán số lượng đã được quy đổi ngược thành số nguyên đẹp
+        durationWeeks: duration
       }
     });
     setShowForm(false);
@@ -134,24 +89,17 @@ export default function ProjectDashboard({ onSelectProject }) {
     if (!weeks) return 'Chưa đặt thời gian';
     const totalDays = Math.round(Number(weeks) * 7);
 
-    // Nếu dưới 7 ngày -> chỉ hiển thị số ngày
     if (totalDays < 7) {
       return `${totalDays} ngày`;
     }
-
-    // Nếu chẵn tháng -> hiển thị số tháng
     if (totalDays % 30 === 0) {
       const months = totalDays / 30;
       return `${months} tháng (${totalDays} ngày)`;
     }
-
-    // Nếu chẵn tuần -> hiển thị số tuần
     if (totalDays % 7 === 0) {
       const w = totalDays / 7;
       return `${w} tuần (${totalDays} ngày)`;
     }
-
-    // Nếu lẻ ngày (ví dụ 10 ngày) -> chỉ hiển thị số ngày
     return `${totalDays} ngày`;
   };
 
@@ -284,7 +232,6 @@ export default function ProjectDashboard({ onSelectProject }) {
     return 'active';
   };
 
-  // KPI Calculations
   const countActive = projects.filter(p => normalizeStatus(p.status) === 'active').length;
   const countPaused = projects.filter(p => normalizeStatus(p.status) === 'paused').length;
   const countDone   = projects.filter(p => normalizeStatus(p.status) === 'done').length;
@@ -297,12 +244,12 @@ export default function ProjectDashboard({ onSelectProject }) {
     <section className="space-y-6 max-w-6xl mx-auto w-full px-4 py-6 md:px-8 md:py-10" aria-labelledby="dashboard-title">
 
       {/* HEADER & BRIEF */}
-      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 pb-5">
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
         <div>
-          <h1 id="dashboard-title" className="text-xl font-bold text-slate-900 tracking-tight">
+          <h1 id="dashboard-title" className="text-xl font-bold text-ink tracking-tight">
             Dự án & Không gian làm việc
           </h1>
-          <p className="text-xs text-slate-500 mt-1 font-normal leading-relaxed">
+          <p className="text-xs text-sub mt-1 font-normal leading-relaxed">
             Xem danh sách, quản lý tiến độ dự án, cấu trúc ngân sách và phân phối nhiệm vụ nhóm.
           </p>
         </div>
@@ -315,70 +262,126 @@ export default function ProjectDashboard({ onSelectProject }) {
         </button>
       </header>
 
-      {/* BENTO GRID METRICS */}
-      <section aria-label="Các chỉ số trạng thái dự án" className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {[
-          { code: 'active', label: 'Đang thực hiện', value: countActive, topBorder: 'border-t-2 border-indigo-600', desc: 'Dự án đang triển khai', textColor: 'text-indigo-600' },
-          { code: 'paused', label: 'Tạm dừng', value: countPaused, topBorder: 'border-t-2 border-amber-500', desc: 'Dự án đang chờ duyệt', textColor: 'text-amber-600' },
-          { code: 'done', label: 'Hoàn thành', value: countDone, topBorder: 'border-t-2 border-emerald-600', desc: 'Dự án đã hoàn tất', textColor: 'text-emerald-600' },
-        ].map((stat) => {
-          const isFilteringThis = filter === stat.code;
-          return (
-            <div
-              key={stat.code}
-              onClick={() => setFilter(filter === stat.code ? 'all' : stat.code)}
-              className={`bg-white rounded-xl border p-5 shadow-sm transition-all duration-200 cursor-pointer ${stat.topBorder} ${
-                isFilteringThis ? 'border-indigo-500 shadow-md ring-1 ring-indigo-500' : 'border-slate-200/80 hover:border-slate-300 hover:shadow-md'
-              }`}
-            >
-              <div className="flex justify-between items-center mb-3">
-                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{stat.label}</span>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                  stat.code === 'active' ? 'bg-indigo-50 text-indigo-700' :
-                  stat.code === 'paused' ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'
-                }`}>
-                  ● {stat.desc}
-                </span>
-              </div>
-              <div className="text-3xl font-bold text-slate-900 tracking-tight">
-                {loading ? '...' : stat.value}
+      {/* BENTO GRID METRICS (F-PATTERN DESIGN) */}
+      <section aria-label="Các chỉ số trạng thái dự án" className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        
+        {/* Cell 1: Total & Active Projects — LARGE BENTO CELL (Top-Left Priority) */}
+        <div 
+          onClick={() => setFilter(filter === 'active' ? 'all' : 'active')}
+          className={`md:col-span-2 bg-surface rounded-xl border p-6 shadow-sm transition-colors cursor-pointer flex flex-col justify-between ${
+            filter === 'active' ? 'border-accent ring-1 ring-accent/30' : 'border-border hover:border-accent/40'
+          }`}
+        >
+          <div className="flex justify-between items-start">
+            <div>
+              <span className="text-[10px] font-bold text-sub uppercase tracking-wider">Tổng Quan Tiến Độ</span>
+              <div className="flex items-baseline gap-3 mt-1">
+                <span className="text-3xl font-extrabold text-ink font-mono">{projects.length}</span>
+                <span className="text-xs text-sub font-mono">Dự án tổng cộng</span>
               </div>
             </div>
-          );
-        })}
+            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-accent-soft text-accent border border-accent/20">
+              Đang chạy: <strong className="font-mono ml-1">{countActive}</strong>
+            </span>
+          </div>
+
+          <div className="mt-6 space-y-2">
+            <div className="flex justify-between text-xs font-medium text-sub">
+              <span>Phân bổ trạng thái</span>
+              <span className="font-mono">
+                {projects.length > 0 ? Math.round((countActive / projects.length) * 100) : 0}% đang thực hiện
+              </span>
+            </div>
+            <div className="h-2 bg-bg rounded-full overflow-hidden flex">
+              <div 
+                className="bg-accent h-full transition-all duration-300"
+                style={{ width: `${projects.length > 0 ? (countActive / projects.length) * 100 : 0}%` }}
+                title="Đang thực hiện"
+              />
+              <div 
+                className="bg-warning h-full transition-all duration-300"
+                style={{ width: `${projects.length > 0 ? (countPaused / projects.length) * 100 : 0}%` }}
+                title="Tạm dừng"
+              />
+              <div 
+                className="bg-success h-full transition-all duration-300"
+                style={{ width: `${projects.length > 0 ? (countDone / projects.length) * 100 : 0}%` }}
+                title="Hoàn thành"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Cell 2 & 3: Smaller Bento Cards */}
+        <div className="space-y-4 flex flex-col justify-between">
+          
+          {/* Tạm dừng Card */}
+          <div 
+            onClick={() => setFilter(filter === 'paused' ? 'all' : 'paused')}
+            className={`bg-surface rounded-xl border p-4 shadow-sm transition-colors cursor-pointer flex items-center justify-between ${
+              filter === 'paused' ? 'border-warning ring-1 ring-warning/30' : 'border-border hover:border-warning/40'
+            }`}
+          >
+            <div>
+              <span className="text-[10px] font-bold text-sub uppercase tracking-wider">Tạm Dừng</span>
+              <h3 className="text-xl font-bold text-warning font-mono mt-0.5">{loading ? '...' : countPaused}</h3>
+            </div>
+            <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-warning-soft text-warning border border-warning/20">
+              Cần xem xét
+            </span>
+          </div>
+
+          {/* Hoàn thành Card */}
+          <div 
+            onClick={() => setFilter(filter === 'done' ? 'all' : 'done')}
+            className={`bg-surface rounded-xl border p-4 shadow-sm transition-colors cursor-pointer flex items-center justify-between ${
+              filter === 'done' ? 'border-success ring-1 ring-success/30' : 'border-border hover:border-success/40'
+            }`}
+          >
+            <div>
+              <span className="text-[10px] font-bold text-sub uppercase tracking-wider">Hoàn Thành</span>
+              <h3 className="text-xl font-bold text-success font-mono mt-0.5">{loading ? '...' : countDone}</h3>
+            </div>
+            <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-success-soft text-success border border-success/20">
+              Đã nghiệm thu
+            </span>
+          </div>
+
+        </div>
+
       </section>
 
       {/* CREATE FORM CARD */}
       {showForm && (
-        <section aria-label="Biểu mẫu khởi tạo dự án" className="bg-white rounded-xl border border-slate-200/80 p-6 shadow-sm space-y-5">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h2 className="font-bold text-slate-900 text-xs uppercase tracking-widest flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-indigo-600" />
+        <section aria-label="Biểu mẫu khởi tạo dự án" className="bg-surface rounded-xl border border-border p-6 shadow-sm space-y-5">
+          <div className="flex items-center justify-between border-b border-border pb-3">
+            <h2 className="font-bold text-ink text-xs uppercase tracking-widest flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-accent" />
               Khởi tạo dự án mới
             </h2>
-            <span className="badge-soft badge-soft-indigo">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-accent-soft text-accent border border-accent/20">
               Bạn sẽ là PM dự án
             </span>
           </div>
 
           <form onSubmit={handleCreate} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Tên dự án *</label>
+              <div className="space-y-1">
+                <label className="label-field">Tên dự án *</label>
                 <input
                   placeholder="VD: Nâng cấp Hệ thống Bán hàng Mobile"
                   required
                   value={newProject.name}
                   onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
-                  className="input-enterprise font-semibold"
+                  className="input-field font-semibold"
                 />
               </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Quy mô dự án</label>
+              <div className="space-y-1">
+                <label className="label-field">Quy mô dự án</label>
                 <select
                   value={newProject.scale || 'Vừa (5-15 người)'}
                   onChange={(e) => setNewProject({ ...newProject, scale: e.target.value })}
-                  className="input-enterprise font-semibold"
+                  className="input-field font-semibold"
                 >
                   <option value="Nhỏ (1-5 người)">Nhỏ (1 - 5 thành viên)</option>
                   <option value="Vừa (5-15 người)">Vừa (5 - 15 thành viên)</option>
@@ -388,32 +391,32 @@ export default function ProjectDashboard({ onSelectProject }) {
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Mô tả mục tiêu dự án</label>
+            <div className="space-y-1">
+              <label className="label-field">Mô tả mục tiêu dự án</label>
               <textarea
                 placeholder="Mô tả tóm tắt mục tiêu và phạm vi dự án..."
                 value={newProject.description}
                 rows={2}
                 onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
-                className="input-enterprise resize-none leading-relaxed"
+                className="input-field resize-none leading-relaxed"
               />
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Thời hạn dự án</label>
+              <div className="space-y-1">
+                <label className="label-field">Thời hạn dự án</label>
                 <div className="flex gap-2">
                   <input
                     type="number" min={1} max={260}
                     placeholder="Số lượng..."
                     value={newProject.durationWeeks}
                     onChange={(e) => setNewProject({ ...newProject, durationWeeks: e.target.value })}
-                    className="flex-1 input-enterprise"
+                    className="flex-1 input-field font-mono"
                   />
                   <select
                     value={newProject.durationUnit}
                     onChange={(e) => setNewProject({ ...newProject, durationUnit: e.target.value })}
-                    className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 font-semibold focus:outline-none focus:border-indigo-500"
+                    className="px-3 py-2 bg-bg border border-border rounded-lg text-xs text-ink font-semibold focus:outline-none focus:border-accent"
                   >
                     <option value="days">Ngày</option>
                     <option value="weeks">Tuần</option>
@@ -423,22 +426,22 @@ export default function ProjectDashboard({ onSelectProject }) {
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Ngày bắt đầu dự kiến</label>
+              <div className="space-y-1">
+                <label className="label-field">Ngày bắt đầu dự kiến</label>
                 <input
                   type="date"
                   value={newProject.startDate}
                   onChange={(e) => setNewProject({ ...newProject, startDate: e.target.value })}
-                  className="input-enterprise"
+                  className="input-field font-mono"
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Mức độ ưu tiên</label>
+              <div className="space-y-1">
+                <label className="label-field">Mức độ ưu tiên</label>
                 <select
                   value={newProject.priority}
                   onChange={(e) => setNewProject({ ...newProject, priority: e.target.value })}
-                  className="input-enterprise font-semibold"
+                  className="input-field font-semibold"
                 >
                   <option value="Low">Thấp</option>
                   <option value="Medium">Trung bình</option>
@@ -447,7 +450,7 @@ export default function ProjectDashboard({ onSelectProject }) {
               </div>
             </div>
             
-            <div className="flex gap-2.5 pt-4 border-t border-slate-100">
+            <div className="flex gap-2.5 pt-4 border-t border-border">
               <button 
                 type="submit" 
                 className="btn-primary"
@@ -468,28 +471,28 @@ export default function ProjectDashboard({ onSelectProject }) {
 
       {/* EDIT PROJECT FORM */}
       {editProject && (
-        <section aria-label="Biểu mẫu chỉnh sửa dự án" className="bg-white rounded-xl border border-amber-200/80 p-6 shadow-sm space-y-5">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h2 className="font-bold text-slate-900 text-xs uppercase tracking-widest flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-amber-500" />
+        <section aria-label="Biểu mẫu chỉnh sửa dự án" className="bg-surface rounded-xl border border-warning/30 p-6 shadow-sm space-y-5">
+          <div className="flex items-center justify-between border-b border-border pb-3">
+            <h2 className="font-bold text-ink text-xs uppercase tracking-widest flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-warning" />
               Chỉnh sửa: {editProject.data.name}
             </h2>
-            <button onClick={() => setEditProject(null)} className="text-slate-400 hover:text-slate-700 text-xs font-bold">✕ Đóng</button>
+            <button onClick={() => setEditProject(null)} className="text-sub hover:text-ink text-xs font-bold transition-colors">✕ Đóng</button>
           </div>
           <form onSubmit={handleUpdateProject} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Tên dự án *</label>
+              <div className="space-y-1">
+                <label className="label-field">Tên dự án *</label>
                 <input required value={editProject.data.name}
                   onChange={e => setEditProject(p => ({ ...p, data: { ...p.data, name: e.target.value } }))}
-                  className="input-enterprise" />
+                  className="input-field font-semibold" />
               </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Quy mô dự án</label>
+              <div className="space-y-1">
+                <label className="label-field">Quy mô dự án</label>
                 <select
                   value={editProject.data.scale || 'Vừa (5-15 người)'}
                   onChange={e => setEditProject(p => ({ ...p, data: { ...p.data, scale: e.target.value } }))}
-                  className="input-enterprise font-semibold"
+                  className="input-field font-semibold"
                 >
                   <option value="Nhỏ (1-5 người)">Nhỏ (1 - 5 thành viên)</option>
                   <option value="Vừa (5-15 người)">Vừa (5 - 15 thành viên)</option>
@@ -497,19 +500,19 @@ export default function ProjectDashboard({ onSelectProject }) {
                   <option value="Doanh nghiệp (>50 người)">Doanh nghiệp (Trên 50 thành viên)</option>
                 </select>
               </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Thời hạn dự án</label>
+              <div className="space-y-1">
+                <label className="label-field">Thời hạn dự án</label>
                 <div className="flex gap-2">
                   <input
                     type="number" min={1} max={260}
                     value={editProject.data.durationWeeks || ''}
                     onChange={e => setEditProject(p => ({ ...p, data: { ...p.data, durationWeeks: e.target.value } }))}
-                    className="flex-1 input-enterprise"
+                    className="flex-1 input-field font-mono"
                   />
                   <select
                     value={editDurationUnit}
                     onChange={(e) => setEditDurationUnit(e.target.value)}
-                    className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 font-semibold focus:outline-none focus:border-indigo-500"
+                    className="px-3 py-2 bg-bg border border-border rounded-lg text-xs text-ink font-semibold focus:outline-none focus:border-accent"
                   >
                     <option value="days">Ngày</option>
                     <option value="weeks">Tuần</option>
@@ -519,40 +522,40 @@ export default function ProjectDashboard({ onSelectProject }) {
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Ngày bắt đầu</label>
+              <div className="space-y-1">
+                <label className="label-field">Ngày bắt đầu</label>
                 <input type="date" value={editProject.data.startDate ? new Date(editProject.data.startDate).toISOString().split('T')[0] : ''}
                   onChange={e => setEditProject(p => ({ ...p, data: { ...p.data, startDate: e.target.value } }))}
-                  className="input-enterprise" />
+                  className="input-field font-mono" />
               </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Mức ưu tiên</label>
+              <div className="space-y-1">
+                <label className="label-field">Mức ưu tiên</label>
                 <select value={editProject.data.priority || 'Medium'}
                   onChange={e => setEditProject(p => ({ ...p, data: { ...p.data, priority: e.target.value } }))}
-                  className="input-enterprise font-semibold">
+                  className="input-field font-semibold">
                   <option value="Low">Thấp</option>
                   <option value="Medium">Trung bình</option>
                   <option value="High">Cao</option>
                 </select>
               </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Trạng thái</label>
+              <div className="space-y-1">
+                <label className="label-field">Trạng thái</label>
                 <select value={editProject.data.status || 'active'}
                   onChange={e => setEditProject(p => ({ ...p, data: { ...p.data, status: e.target.value } }))}
-                  className="input-enterprise font-semibold">
+                  className="input-field font-semibold">
                   <option value="active">Đang thực hiện</option>
                   <option value="paused">Tạm dừng</option>
                   <option value="done">Hoàn thành</option>
                 </select>
               </div>
             </div>
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Mô tả</label>
+            <div className="space-y-1">
+              <label className="label-field">Mô tả</label>
               <textarea rows={2} value={editProject.data.description || ''}
                 onChange={e => setEditProject(p => ({ ...p, data: { ...p.data, description: e.target.value } }))}
-                className="input-enterprise resize-none leading-relaxed" />
+                className="input-field resize-none leading-relaxed" />
             </div>
-            <div className="flex gap-2.5 pt-4 border-t border-slate-100">
+            <div className="flex gap-2.5 pt-4 border-t border-border">
               <button type="submit" className="btn-primary">
                 Cập nhật dự án
               </button>
@@ -566,14 +569,16 @@ export default function ProjectDashboard({ onSelectProject }) {
 
       {/* FILTER BAR */}
       <nav className="flex items-center gap-3 flex-wrap pb-1" aria-label="Bộ lọc danh sách dự án">
-        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Bộ lọc dự án:</span>
-        <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200/60">
+        <span className="text-xs font-semibold text-sub uppercase tracking-wider flex items-center gap-1">
+          <Filter className="w-3.5 h-3.5" /> Bộ lọc:
+        </span>
+        <div className="flex bg-bg p-1 rounded-lg border border-border">
           <button
             onClick={() => setFilter('all')}
-            className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
+            className={`px-3 py-1 rounded-md text-xs font-semibold transition-colors ${
               filter === 'all'
-                ? 'bg-white text-indigo-700 shadow-sm'
-                : 'text-slate-500 hover:text-slate-900'
+                ? 'bg-surface text-accent shadow-sm'
+                : 'text-sub hover:text-ink'
             }`}
           >
             Tất cả
@@ -582,64 +587,61 @@ export default function ProjectDashboard({ onSelectProject }) {
             <button
               key={code}
               onClick={() => setFilter(code)}
-              className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
+              className={`px-3 py-1 rounded-md text-xs font-semibold transition-colors ${
                 filter === code
-                  ? 'bg-white text-indigo-700 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-900'
+                  ? 'bg-surface text-accent shadow-sm'
+                  : 'text-sub hover:text-ink'
               }`}
             >
               {label}
             </button>
           ))}
         </div>
-        <span className="ml-auto text-xs text-slate-400 font-medium">{filteredProjects.length} dự án</span>
+        <span className="ml-auto text-xs text-sub font-mono">{filteredProjects.length} dự án</span>
       </nav>
 
       {/* PROJECTS LIST GRID */}
       {loading ? (
-        <div className="text-center py-20 bg-white/50 backdrop-blur-md rounded-2xl border border-slate-200/60">
-          <Loader2 className="w-7 h-7 text-indigo-600 animate-spin mx-auto mb-3" />
-          <p className="text-slate-500 text-xs font-bold tracking-wider uppercase">Đang đồng bộ dữ liệu dự án...</p>
+        <div className="text-center py-20 bg-surface rounded-2xl border border-border">
+          <Loader2 className="w-7 h-7 text-accent animate-spin mx-auto mb-3" />
+          <p className="text-sub text-xs font-bold tracking-wider uppercase">Đang đồng bộ dữ liệu dự án...</p>
         </div>
       ) : filteredProjects.length === 0 ? (
-        <div className="text-center py-20 border border-dashed border-slate-300 rounded-2xl bg-white/40 backdrop-blur-md">
-          <Layers className="w-10 h-10 text-slate-350 mx-auto mb-3" />
-          <p className="text-slate-650 font-bold text-xs uppercase tracking-wider">Không tìm thấy dự án nào</p>
-          <p className="text-slate-455 text-[11px] mt-1 font-medium">Bấm nút "Tạo dự án mới" để bắt đầu khởi tạo kế hoạch làm việc.</p>
+        <div className="text-center py-20 border border-dashed border-border rounded-2xl bg-surface">
+          <Layers className="w-10 h-10 text-sub/50 mx-auto mb-3" />
+          <p className="text-ink font-bold text-xs uppercase tracking-wider">Không tìm thấy dự án nào</p>
+          <p className="text-sub text-[11px] mt-1 font-medium">Bấm nút "Tạo dự án mới" để bắt đầu khởi tạo kế hoạch làm việc.</p>
         </div>
       ) : (
         <section aria-label="Danh sách các dự án hiện có" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filteredProjects.map((project) => {
             const status = (project.status || 'active').toLowerCase();
             const priority = (project.priority || 'medium').toLowerCase();
-            const projectKey = project.key || `PRJ-${(project.id || '').toString().slice(-4).toUpperCase()}`;
 
             return (
               <article
                 key={project.id}
                 onClick={() => onSelectProject(project)}
-                className="bg-white rounded-xl border-2 border-slate-300 p-5 md:p-6 shadow-sm hover:border-indigo-600 hover:shadow-md transition-all duration-150 cursor-pointer group relative flex flex-col justify-between space-y-4 min-h-[215px]"
+                className="bg-surface rounded-xl border border-border p-5 md:p-6 shadow-sm hover:border-accent transition-colors duration-150 cursor-pointer group relative flex flex-col justify-between space-y-4 min-h-[215px]"
               >
-                {/* Header: Title + Action Buttons */}
-                <div className="flex items-start justify-between gap-3 pb-2.5 border-b-2 border-slate-200">
-                  <div className="space-y-1.5 flex-1 min-w-0">
-                    <h3 className="text-base font-bold text-slate-900 group-hover:text-indigo-600 transition-colors truncate">
+                <div className="flex items-start justify-between gap-3 pb-2.5 border-b border-border">
+                  <div className="space-y-1 flex-1 min-w-0">
+                    <h3 className="text-base font-bold text-ink group-hover:text-accent transition-colors truncate">
                       {project.name}
                     </h3>
                   </div>
 
-                  {/* Actions overlay */}
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 bg-white border border-slate-300 rounded-lg p-0.5 shadow-2xs">
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 bg-surface border border-border rounded-lg p-0.5">
                     <button
                       onClick={(e) => { e.stopPropagation(); handleStartEdit(project); }}
-                      className="p-1 text-slate-600 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors"
+                      className="p-1 text-sub hover:text-warning hover:bg-warning-soft rounded transition-colors"
                       title="Chỉnh sửa"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                     </button>
                     <button
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDelClick(project, e); }}
-                      className="p-1 text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
+                      className="p-1 text-sub hover:text-danger hover:bg-danger-soft rounded transition-colors"
                       title="Xóa"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -647,15 +649,11 @@ export default function ProjectDashboard({ onSelectProject }) {
                   </div>
                 </div>
 
-                {/* Description */}
-                <p className="text-slate-600 text-xs font-normal line-clamp-2 leading-relaxed min-h-[36px] py-0.5">
+                <p className="text-sub text-xs font-normal line-clamp-2 leading-relaxed min-h-[36px] py-0.5">
                   {project.description || 'Chưa cập nhật mô tả phạm vi công việc dự án.'}
                 </p>
 
-                {/* Native Badge Selectors (Priority & Status - Sharp 2px Borders) */}
-                <div className="flex items-center justify-between gap-2 py-2.5 border-t-2 border-b-2 border-slate-200 my-1" onClick={(e) => e.stopPropagation()}>
-                  
-                  {/* Priority Select */}
+                <div className="flex items-center justify-between gap-2 py-2.5 border-t border-b border-border my-1" onClick={(e) => e.stopPropagation()}>
                   <div>
                     {(() => {
                       const ownerId = project.owner && typeof project.owner === 'object' ? project.owner.id : project.owner;
@@ -667,23 +665,22 @@ export default function ProjectDashboard({ onSelectProject }) {
                           value={normalizedPriority}
                           onChange={(e) => isPM && handleUpdatePriority(project.id, e.target.value)}
                           disabled={!isPM}
-                          className={`text-[11px] font-bold px-3 py-1 rounded-md border-2 cursor-pointer transition-colors outline-none appearance-none ${
+                          className={`text-[11px] font-bold px-3 py-1 rounded-md border cursor-pointer transition-colors outline-none appearance-none ${
                             normalizedPriority === 'High'
-                              ? 'text-rose-700 bg-rose-50 border-rose-300 hover:bg-rose-100'
+                              ? 'text-danger bg-danger-soft border-danger/20'
                               : normalizedPriority === 'Low'
-                              ? 'text-slate-700 bg-slate-100 border-slate-300 hover:bg-slate-200'
-                              : 'text-amber-800 bg-amber-50 border-amber-300 hover:bg-amber-100'
+                              ? 'text-sub bg-bg border-border'
+                              : 'text-warning bg-warning-soft border-warning/20'
                           }`}
                         >
-                          <option value="High" className="text-rose-700 bg-white font-bold">Ưu tiên Cao</option>
-                          <option value="Medium" className="text-amber-800 bg-white font-bold">Ưu tiên Vừa</option>
-                          <option value="Low" className="text-slate-700 bg-white font-bold">Ưu tiên Thấp</option>
+                          <option value="High" className="text-danger bg-surface font-bold">Ưu tiên Cao</option>
+                          <option value="Medium" className="text-warning bg-surface font-bold">Ưu tiên Vừa</option>
+                          <option value="Low" className="text-sub bg-surface font-bold">Ưu tiên Thấp</option>
                         </select>
                       );
                     })()}
                   </div>
 
-                  {/* Status Select */}
                   <div>
                     {(() => {
                       const ownerId = project.owner && typeof project.owner === 'object' ? project.owner.id : project.owner;
@@ -695,32 +692,31 @@ export default function ProjectDashboard({ onSelectProject }) {
                           value={normalizedStatus}
                           onChange={(e) => isPM && handleUpdateStatus(project.id, e.target.value)}
                           disabled={!isPM}
-                          className={`text-[11px] font-bold px-3 py-1 rounded-md border-2 cursor-pointer transition-colors outline-none appearance-none ${
+                          className={`text-[11px] font-bold px-3 py-1 rounded-md border cursor-pointer transition-colors outline-none appearance-none ${
                             normalizedStatus === 'paused'
-                              ? 'text-amber-800 bg-amber-50 border-amber-300 hover:bg-amber-100'
+                              ? 'text-warning bg-warning-soft border-warning/20'
                               : normalizedStatus === 'done'
-                              ? 'text-blue-700 bg-blue-50 border-blue-300 hover:bg-blue-100'
-                              : 'text-emerald-700 bg-emerald-50 border-emerald-300 hover:bg-emerald-100'
+                              ? 'text-success bg-success-soft border-success/20'
+                              : 'text-accent bg-accent-soft border-accent/20'
                           }`}
                         >
-                          <option value="active" className="text-emerald-700 bg-white font-bold">Đang thực hiện</option>
-                          <option value="paused" className="text-amber-800 bg-white font-bold">Tạm dừng</option>
-                          <option value="done" className="text-blue-700 bg-white font-bold">Hoàn thành</option>
+                          <option value="active" className="text-accent bg-surface font-bold">Đang thực hiện</option>
+                          <option value="paused" className="text-warning bg-surface font-bold">Tạm dừng</option>
+                          <option value="done" className="text-success bg-surface font-bold">Hoàn thành</option>
                         </select>
                       );
                     })()}
                   </div>
                 </div>
 
-                {/* Footer Info: Duration & Scale */}
-                <div className="flex items-center justify-between pt-3 mt-auto border-t-2 border-slate-200 text-xs text-slate-600 font-medium">
-                  <div className="flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-slate-500" />
+                <div className="flex items-center justify-between pt-3 mt-auto border-t border-border text-xs text-sub font-medium">
+                  <div className="flex items-center gap-1.5 font-mono">
+                    <Clock className="w-3.5 h-3.5 text-sub" />
                     <span>{formatDuration(project.durationWeeks)}</span>
                   </div>
-                  <div className="flex items-center gap-1 text-slate-800 font-bold">
+                  <div className="flex items-center gap-1 text-ink font-semibold">
                     <span>Quy mô:</span>
-                    <span className="text-slate-900">{project.scale || 'Vừa (5-15 người)'}</span>
+                    <span>{project.scale || 'Vừa (5-15 người)'}</span>
                   </div>
                 </div>
               </article>
@@ -731,30 +727,30 @@ export default function ProjectDashboard({ onSelectProject }) {
 
       {/* CENTER CONFIRMATION MODAL FOR PROJECT DELETION */}
       {deleteProjectModal.isOpen && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-md w-full p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 bg-ink/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-surface rounded-2xl border border-border shadow-xl max-w-md w-full p-6 space-y-4">
             <div className="flex items-start gap-3">
-              <div className="p-2.5 rounded-xl bg-rose-50 text-rose-600 border border-rose-200 shrink-0">
-                <Trash2 className="w-5 h-5 text-rose-600" />
+              <div className="p-2.5 rounded-xl bg-danger-soft text-danger border border-danger/20 shrink-0">
+                <Trash2 className="w-5 h-5 text-danger" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-slate-800">Xác nhận xóa dự án</h3>
-                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                <h3 className="text-sm font-bold text-ink">Xác nhận xóa dự án</h3>
+                <p className="text-xs text-sub mt-1 leading-relaxed">
                   Bạn có chắc chắn muốn xóa dự án "{deleteProjectModal.projectName}"? Thao tác này sẽ xóa toàn bộ dữ liệu công việc liên quan.
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
               <button
                 onClick={() => setDeleteProjectModal({ isOpen: false, projectId: null, projectName: '' })}
-                className="btn-secondary-clean text-xs px-4 py-2"
+                className="btn-secondary text-xs px-4 py-2"
               >
                 Hủy bỏ
               </button>
               <button
                 onClick={handleConfirmDeleteProject}
-                className="btn-primary-clean bg-rose-600 hover:bg-rose-700 text-xs px-4 py-2"
+                className="btn-danger text-xs px-4 py-2"
               >
                 Xóa vĩnh viễn
               </button>

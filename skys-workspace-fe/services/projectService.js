@@ -1,7 +1,7 @@
 import api from "./api"
 
 export const getProjects = async () => {
-    const response = await api.get('/projects');
+    const response = await api.get(`/projects?t=${Date.now()}`);
     return response.data;
 }
 
@@ -20,8 +20,8 @@ export const updProject = async (projectId, projectData) => {
 }
 
 export const getAllProjectsAdmin = async () => {
-    const response = await api.get('/projects/admin/all');
-    return response.data; ///
+    const response = await api.get(`/projects/admin/all?t=${Date.now()}`);
+    return response.data;
 }
 
 export const deleteProjectAdmin = async (projectId) => {
@@ -30,18 +30,18 @@ export const deleteProjectAdmin = async (projectId) => {
 }
 
 export const getProjectMembers = async (projectId) => {
-    const response = await api.get(`/projects/${projectId}/members`);
+    const response = await api.get(`/projects/${projectId}/members?t=${Date.now()}`);
     return response.data;
 }
 
 export const addProjectMember = async (projectId, email, role = 'MEMBER') => {
-    try {
-        const response = await api.post('/project-members', { projectId, email, role });
-        return response.data;
-    } catch {
-        const response = await api.post(`/projects/${projectId}/members`, { email, role });
-        return response.data;
-    }
+    const response = await api.post('/project-members', { projectId, email, role });
+    return response.data;
+}
+
+export const updateProjectMemberRole = async (memberId, role) => {
+    const response = await api.put(`/project-members/${memberId}/role`, { role });
+    return response.data;
 }
 
 export const removeProjectMember = async (memberId) => {

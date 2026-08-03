@@ -4,35 +4,43 @@
  */
 
 const TEAM_MAP = {
-    'FRONTEND_LEAD': 'FRONTEND_LEAD',
-    'FRONTEND_DEVELOPER': 'FRONTEND_DEVELOPER',
-    'FRONTEND_MEMBER': 'FRONTEND_DEVELOPER', // 👈 Quy đổi alias
-    'BACKEND_LEAD': 'BACKEND_LEAD',
-    'BACKEND_DEVELOPER': 'BACKEND_DEVELOPER',
-    'BACKEND_MEMBER': 'BACKEND_DEVELOPER',
-    'DESIGN_LEAD': 'DESIGN_LEAD',
-    'DESIGNER_LEAD': 'DESIGN_LEAD',
-    'UI_UX_DESIGNER': 'UI_UX_DESIGNER',
-    'QA_LEAD': 'QA_LEAD',
-    'QA_TESTER': 'QA_TESTER',
-    'DEVOPS_LEAD': 'DEVOPS_LEAD',
-    'DEVOPS_ENGINEER': 'DEVOPS_ENGINEER',
-    'PROJECT_MANAGER': 'PROJECT_MANAGER'
+    'FRONTEND': ['FRONTEND_LEAD', 'FRONTEND_DEVELOPER', 'FRONTEND_MEMBER'],
+    'BACKEND': ['BACKEND_LEAD', 'BACKEND_DEVELOPER', 'BACKEND_MEMBER'],
+    'DESIGN': ['DESIGN_LEAD', 'DESIGNER_LEAD', 'UI_UX_DESIGNER'],
+    'QA': ['QA_LEAD', 'QA_TESTER'],
+    'DEVOPS': ['DEVOPS_LEAD', 'DEVOPS_ENGINEER'],
+    'BA': ['BA_LEAD', 'BUSINESS_ANALYST', 'BA'],
+    'MANAGEMENT': ['PROJECT_MANAGER', 'Owner']
 };
 
+const LEAD_ROLES = [
+    'PROJECT_MANAGER', 
+    'FRONTEND_LEAD', 
+    'BACKEND_LEAD', 
+    'DESIGN_LEAD', 
+    'QA_LEAD', 
+    'DEVOPS_LEAD',
+    'BA_LEAD'
+];
+
 const getRolesByTeamType = (teamType) => {
-    return TEAM_MAP[teamType] || [];
-}
+    if (!teamType || teamType === 'ALL') return [];
+    return TEAM_MAP[teamType.toUpperCase()] || [teamType];
+};
 
 const getTeamTypeByRole = (userRole) => {
-    for(const [teamType, roles] of Object.entries(TEAM_MAP)){
-        if(roles.includes(userRole)) return teamType;
+    if (!userRole) return 'ALL';
+    for (const [teamType, roles] of Object.entries(TEAM_MAP)) {
+        if (Array.isArray(roles) && roles.includes(userRole)) {
+            return teamType;
+        }
     }
-    return 'ALL'
+    return 'ALL';
 };
 
 module.exports = {
     TEAM_MAP,
+    LEAD_ROLES,
     getRolesByTeamType,
     getTeamTypeByRole
 }

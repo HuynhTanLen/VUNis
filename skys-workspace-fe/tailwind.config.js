@@ -10,18 +10,24 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', 'Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
       },
       colors: {
-        // Tông màu chủ đạo Enterprise
-        brand: {
-          50: '#eef2ff',
-          100: '#e0e7ff',
-          500: '#6366f1',
-          600: '#4f46e5', // Màu Indigo chủ đạo
-          700: '#4338ca',
-        }
-      }
+        bg: '#F8F9FA',
+        surface: '#FFFFFF',
+        border: '#D1D5DB',
+        ink: '#0F172A',
+        sub: '#64748B',
+        accent: '#334155',
+        'accent-soft': '#F1F5F9',
+        success: '#166534',
+        'success-soft': '#F0FDF4',
+        warning: '#9A3412',
+        'warning-soft': '#FFF7ED',
+        danger: '#991B1B',
+        'danger-soft': '#FEF2F2',
+      },
     },
   },
   plugins: [],

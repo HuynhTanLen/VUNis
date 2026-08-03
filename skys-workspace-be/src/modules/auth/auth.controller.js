@@ -1,7 +1,7 @@
 
 const authService = require('./auth.service');
 const { RegisterDTO, LoginDTO } = require('./auth.dto');
-const asyncHandler = require('../../shared/asyncHandler');
+const asyncHandler = require('../../shared/constants/asyncHandler');
 
 const registerUser = asyncHandler(async (req, res) => {
     const dto = new RegisterDTO(req.body).validate();
@@ -15,17 +15,17 @@ const loginUser = asyncHandler(async (req, res) => {
         ip: req.ip || req.connection.remoteAddress,
         userAgent: req.headers['user-agent']
     };
-    
+
     const result = await authService.login(dto, reqMeta);
-    
+
     res.cookie('token', result.token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'Lax',
-        maxAge: 7 * 24 * 60 * 60 * 1000 
+        maxAge: 7 * 24 * 60 * 60 * 1000
     });
-    
-    res.json({ message: 'Đăng nhập thành công', user: result.user, token: result.token });
+
+    res.json({ message: 'Đăng nhập thành công', user: result.user });
 });
 
 const logoutUser = asyncHandler(async (req, res) => {
@@ -94,13 +94,13 @@ const resetPassword = asyncHandler(async (req, res) => {
     res.json(result);
 });
 
-module.exports = { 
-    registerUser, 
-    loginUser, 
+module.exports = {
+    registerUser,
+    loginUser,
     logoutUser,
-    getMe, 
-    getUsers, 
-    updateRole, 
+    getMe,
+    getUsers,
+    updateRole,
     toggleBlockUser,
     deleteUser,
     forgotPassword,

@@ -4,6 +4,9 @@ const projectMapper = require('./project.mapper');
 const authRepo = require('../auth/auth.repository');
 const { AppError } = require('../../shared/errors/AppError');
 const { ProjectNotFoundError, ForbiddenProjectActionError } = require('./project.error');
+const projectMemberService = require('../projectMembers/projectMember.service');
+
+
 
 const getAll = async (userId) => {
     const projects = await projectRepo.findProjectsByOwner(userId);
@@ -154,102 +157,13 @@ const removeProjectByAdmin = async (projectId) => {
 };
 
 const addMember = async (projectId, email, userId) => {
-    const project = await projectRepo.findProjectById(projectId);
-    if (!project) {
-        throw new ProjectNotFoundError();
-    }
-    
-    const ownerId = project.owner?.id?.toString() || project.ownerId?.toString();
-    if (!ownerId) {
-        throw new AppError('Dự án không có chủ sở hữu hợp lệ', 400, 'PROJECT_OWNER_INVALID');
-    }
-    
-    // Allow adding members to project
-    
-    // Find user to add
-    // AuthRepo should ideally be migrated, assuming it returns an object with an 'id'
-    const userToAdd = await prisma.user.findUnique({ where: { email } });
-    if (!userToAdd) {
-        throw new AppError('Không tìm thấy người dùng với email này', 404, 'MEMBER_NOT_FOUND');
-    }
-    
-    const userToAddId = userToAdd.id;
-    
-    // Check if user is owner
-    if (ownerId === userToAddId) {
-        throw new AppError('Người dùng này là chủ sở hữu dự án', 400, 'MEMBER_IS_OWNER');
-    }
-    
-    // Check if user is already a member
-    const existingMember = await prisma.projectMember.findFirst({
-        where: { projectId: projectId, userId: userToAddId }
-    });
-    if (existingMember) {
-        throw new AppError('Người dùng này đã là thành viên của dự án', 400, 'MEMBER_ALREADY_EXISTS');
-    }
-    
-    // Add user to project members
-    await prisma.projectMember.create({
-        data: {
-            userId: userToAddId,
-            projectId: projectId,
-            role: 'MEMBER'
-        }
-    });
-    
-    const updatedProject = await projectRepo.findProjectById(projectId);
-    return projectMapper.toProjectResponse(updatedProject);
+    return await projectMemberService.addMemberToProject({projectId, email, role:'MEMBER'});
 };
 
 const getMembers = async (projectId, userId) => {
     try {
-        const project = await prisma.project.findUnique({
-            where: { id: projectId },
-            include: {
-                owner: { select: { id: true, name: true, email: true, avatar: true } }
-            }
-        });
-
-        if (!project) return [];
-        
-        let ownerUser = project.owner;
-        if (!ownerUser && project.ownerId) {
-            ownerUser = await prisma.user.findUnique({
-                where: { id: project.ownerId },
-                select: { id: true, name: true, email: true, avatar: true }
-            });
-        }
-        if (!ownerUser && userId) {
-            ownerUser = await prisma.user.findUnique({
-                where: { id: userId },
-                select: { id: true, name: true, email: true, avatar: true }
-            });
-        }
-        
-        const ownerItem = ownerUser ? {
-            id: ownerUser.id,
-            name: ownerUser.name || 'Chủ dự án',
-            email: ownerUser.email || '',
-            avatar: ownerUser.avatar || '',
-            role: 'Owner'
-        } : null;
-        
-        const projectMembers = await prisma.projectMember.findMany({
-            where: { projectId },
-            include: { user: { select: { id: true, name: true, email: true, avatar: true } } }
-        });
-
-        const memberItems = (projectMembers || [])
-            .filter(m => m && m.user && m.user.id && m.user.id !== ownerUser?.id)
-            .map(m => ({
-                id: m.user.id,
-                name: m.user.name || 'Thành viên',
-                email: m.user.email || '',
-                avatar: m.user.avatar || '',
-                role: m.role || 'Member'
-            }));
-        
-        return ownerItem ? [ownerItem, ...memberItems] : memberItems;
+        const memberService = require('../projectMembers/projectMember.service');
+        return await memberService.getMembersByProject(projectId);
     } catch (err) {
         console.error('Lỗi getMembers:', err);
         return [];
@@ -269,6 +183,8 @@ const getSubProjects = async (parentProjectId) => {
     }
     return await projectRepo.findSubProjects(parentProjectId);
 };
+
+
 
 module.exports = { 
     getAll, 

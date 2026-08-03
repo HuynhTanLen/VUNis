@@ -56,9 +56,10 @@ const protect = async (req, res, next) => {
         }
 
         req.user = user;
+        req.user = {...user, userId: user.id}
         next();
     } catch (error) {
-        return res.status(401).json({ message: 'Token hết hạn hoặc không hợp lệ: ' + error.message });
+        return res.status(401).json({ message: 'Token hết hạn hoặc không hợp lệ: '});
     }
 };
 

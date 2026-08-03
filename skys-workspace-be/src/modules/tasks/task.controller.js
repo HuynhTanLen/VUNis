@@ -11,7 +11,7 @@ const getTasksByProject = asyncHandler(async (req, res) => {
 const createTask = asyncHandler(
     async (req, res) => {
         const dto = new CreateTaskDTO(req.body).validate();
-        const task = await taskService.create(dto, req.user.userId);
+        const task = await taskService.create(dto, req.user.id);
         res.status(201).json(task);
     });
 

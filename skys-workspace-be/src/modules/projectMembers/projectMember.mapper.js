@@ -11,7 +11,7 @@ const toProjectMemberResponse = (member) => {
     const userObj = member.user && typeof member.user === 'object' ? member.user : {};
 
     return {
-        id: userObj.id || member.userId || member.id,
+        id: member.id || userObj.id || member.userId,
         memberId: member.id,
         userId: userObj.id || member.userId,
         name: userObj.name || 'Thành viên',

@@ -26,7 +26,8 @@ export const updateUserRole = async (userId, role) => {
 }
 
 export const updateUserStatus = async (userId, status) => {
-    const response = await api.patch(`/users/${userId}/block`, { status });
+    const isBlocked = typeof status === 'boolean' ? status : (status === 'suspended' || status === 'blocked');
+    const response = await api.patch(`/users/${userId}/block`, { isBlocked, status });
     return response.data;
 }
 

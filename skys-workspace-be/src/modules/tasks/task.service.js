@@ -3,6 +3,7 @@ const taskMapper = require('./task.mapper');
 const projectRepo = require('../projects/project.repository');
 const { ValidationError, ForbiddenError } = require('../../shared/errors/AppError');
 const { getTeamTypeByRole } = require('../../shared/constants/teamRoles');
+const prisma = require('../../config/prisma');
 
 /**
  * Kiểm tra ngày của Task có nằm trong khoảng ngày của Dự án không.
@@ -43,6 +44,17 @@ const create = async (dto, userId) => {
         validateTaskDatesWithinProject(project, finalStartDate, finalEndDate);
     }
 
+    let targetAssigneeId = dto.assigneeId || userId;
+    if (targetAssigneeId) {
+        const userExists = await prisma.user.findUnique({ where: { id: targetAssigneeId } });
+        if (!userExists) {
+            const memberRecord = await prisma.projectMember.findUnique({ where: { id: targetAssigneeId } });
+            if (memberRecord) {
+                targetAssigneeId = memberRecord.userId;
+            }
+        }
+    }
+
     const taskData = {
         title: dto.title,
         status: dto.status,
@@ -51,7 +63,7 @@ const create = async (dto, userId) => {
         role: dto.role,
         projectId: dto.projectId,
         sprintId: dto.sprintId,
-        assigneeId: dto.assigneeId || userId,
+        assigneeId: targetAssigneeId,
         startDate: finalStartDate,
         endDate: finalEndDate,
         estimatedCost: dto.estimatedCost,
@@ -90,7 +102,17 @@ const update = async (taskId, dto) => {
             updateData[field] = dto[field];
         }
     });
-    if (dto.assigneeId !== undefined) updateData.assigneeId = dto.assigneeId || null;
+    if (dto.assigneeId !== undefined) {
+        let aId = dto.assigneeId || null;
+        if (aId) {
+            const userExists = await prisma.user.findUnique({ where: { id: aId } });
+            if (!userExists) {
+                const memberRecord = await prisma.projectMember.findUnique({ where: { id: aId } });
+                if (memberRecord) aId = memberRecord.userId;
+            }
+        }
+        updateData.assigneeId = aId;
+    }
 
     const updatedTask = await taskRepo.updateTask(taskId, updateData);
     return taskMapper.toTaskResponse(updatedTask);
@@ -171,7 +193,31 @@ const editSubTaskService = async (taskId, subTaskId, title, currentUserId, userP
     return taskMapper.toTaskResponse(updateTask)
 };
 
+const buildTaskWhereClause = (query = {}) =>{
+    const where = {};
 
+    if(query.status) {
+        where.status = query.status
+    }
+    if(query.priority){
+        where.priority = query.priority
+    }
+    if(query.search){
+        where.title = {
+            contains: query.search,
+            mode: 'insensitive'
+        }
+    }
+
+    if(query.assigneeId){
+        where.assigneeId = query.assigneeId
+    }
+    return where
+}
+
+const buildTaskOrderByClause = (query) => {
+    
+}
 module.exports = { 
     getByProject, 
     create, 

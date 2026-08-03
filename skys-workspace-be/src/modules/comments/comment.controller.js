@@ -5,7 +5,7 @@
  */
 const commentService = require('./comment.service');
 const { CreateCommentDTO, UpdateCommentDTO } = require('./comment.dto');
-const asyncHandler = require('../../shared/asyncHandler');
+const asyncHandler = require('../../shared/constants/asyncHandler');
 
 const getCommentsByTask = asyncHandler(async (req, res) => {
     const taskId = req.params.taskId || req.params.id;
@@ -24,19 +24,19 @@ const updateComment = asyncHandler(async (req, res) => {
     const updated = await commentService.update(
         req.params.id,
         dto,
-        req.user.userId,
+        req.user.id,
         req.user.role
-        );
-        res.status(200).json(updated);
+    );
+    res.status(200).json(updated);
 });
 
 const deleteComment = asyncHandler(async (req, res) => {
-        const result = await commentService.remove(
-            req.params.id,
-            req.user.userId,
-            req.user.role
-        );
-        res.status(200).json(result);
+    const result = await commentService.remove(
+        req.params.id,
+        req.user.id,
+        req.user.role
+    );
+    res.status(200).json(result);
 });
 
 module.exports = {

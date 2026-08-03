@@ -8,6 +8,31 @@ const commentMapper = require('./comment.mapper');
 const { CommentNotFoundError, CommentPermissionError } = require('./comment.error');
 const prisma = require('../../config/prisma');
 const { NotFoundError } = require('../../shared/errors/AppError');
+const { getIo } = require('../../config/socket');
+
+const builCommenTree = (comments = []) => {
+    if (!Array.isArray(comments) || comments.length === 0) return [];
+
+    const map = {};
+    const rootComments = [];
+
+    comments.forEach(comment => {
+        const cId = comment.id || comment._id;
+        map[cId] = { ...comment, replies: Array.isArray(comment.replies) ? [...comment.replies] : [] };
+    });
+
+    comments.forEach(comment => {
+        const cId = comment.id || comment._id;
+        if (comment.parentId) {
+            if (map[comment.parentId]) {
+                map[comment.parentId].replies.push(map[cId]);
+            }
+        } else {
+            rootComments.push(map[cId]);
+        }
+    });
+    return rootComments;
+};
 
 const getCommentByTask = async (taskId) => {
     const taskExists = await prisma.task.findUnique({ where: { id: taskId } });
@@ -16,7 +41,8 @@ const getCommentByTask = async (taskId) => {
     }
 
     const comments = await commentRepo.findCommentByTaskId(taskId);
-    return commentMapper.toCommentListResponse(comments);
+    const formatted = commentMapper.toCommentListResponse(comments);
+    return builCommenTree(formatted);
 };
 
 const create = async (dto, userId) => {
@@ -32,7 +58,11 @@ const create = async (dto, userId) => {
         parentId: dto.parentId || null
     });
 
-    return commentMapper.toCommentResponse(newComment);
+    const commentRespo = commentMapper.toCommentResponse(newComment);
+
+    getIo().to(`task:${dto.taskId}`).emit('new_comment', commentRespo);
+
+    return commentRespo;
 };
 
 const update = async (commentId, dto, currentUserId, userRoleName) => {
@@ -41,8 +71,8 @@ const update = async (commentId, dto, currentUserId, userRoleName) => {
         throw new CommentNotFoundError();
     }
 
-    const isAuthor = comment.author?.id === currentUserId;
-    const isAdmin = userRoleName === 'admin' || userRoleName === 'super_admin';
+    const isAuthor = comment.authorId === currentUserId || comment.author?.id === currentUserId;
+    const isAdmin = ['SUPER_ADMIN', 'USER_ADMIN'].includes(userRoleName);
 
     if (!isAuthor && !isAdmin) {
         throw new CommentPermissionError('Bạn chỉ có thể chỉnh sửa bình luận của chính mình');
@@ -73,5 +103,6 @@ module.exports = {
     getCommentByTask,
     create,
     update,
-    remove
+    remove,
+    builCommenTree
 };

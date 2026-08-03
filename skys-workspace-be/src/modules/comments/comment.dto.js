@@ -8,6 +8,7 @@ class CreateCommentDTO {
     constructor(body) {
         this.content = body.content?.trim() || '';
         this.taskId = body.taskId || body.task || null;
+        this.parentId = body.parentId || null;
     }
 
     validate() {
