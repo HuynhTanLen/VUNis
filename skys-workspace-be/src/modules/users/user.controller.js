@@ -64,6 +64,20 @@ const getDashboardStatusStats = asyncHandler(async (req, res) => {
     res.json(stats);
 });
 
+const getSalaryUser = asyncHandler(async(req,res,next) =>{
+    const data = await userService.getUserSalary(req.params.id);
+    res.status(200).json({success: true, data});
+})
+
+const updateSalaryUser = asyncHandler(async(req,res,next) =>{
+    const {hourlyRate} = req.body;
+    const data = await userService.updateUserSalary(req.params.id, hourlyRate);
+    res.status(200).json({
+        success: true,
+        message: 'Update Salary Completed',
+        data
+    })
+})
 module.exports = {
     getUsers,
     getUserById,
@@ -72,6 +86,8 @@ module.exports = {
     toggleBlock,
     deleteUser,
     getUserLogs,
-    getDashboardStatusStats
+    getDashboardStatusStats,
+    getSalaryUser,
+    updateSalaryUser
 };
 

@@ -10,6 +10,7 @@ class CreateProjectDTO {
         this.durationWeeks = body.durationWeeks !== undefined && body.durationWeeks !== '' && !isNaN(Number(body.durationWeeks)) ? Number(body.durationWeeks) : 4;
         this.startDate = body.startDate ? new Date(body.startDate) : new Date();
         this.priority = body.priority?.trim() || 'Medium';
+        this.modelType = body.modelType?.toUpperCase() || 'WATERFALL';
 
         // Tự động tính endDate từ startDate + durationWeeks
         if (this.startDate && this.durationWeeks) {

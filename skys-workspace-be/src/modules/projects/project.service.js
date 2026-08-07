@@ -58,6 +58,7 @@ const create = async (dto, userId) => {
         endDate: dto.endDate || null,
         status: 'ACTIVE',
         priority: normalizedPriority,
+        modelType: dto.modelType,
         ownerId: userId
     };
 
@@ -70,6 +71,50 @@ const create = async (dto, userId) => {
                 role: 'PROJECT_MANAGER'
             }
         });
+        if(proj.modelType === 'WATERFALL'){
+            const start = new Date(proj.startDate);
+            const totalDays = proj.durationWeeks * 7;
+
+            const waterfallPhases = [
+                {name: 'Analysis & Requirements', ratio: 0.10},
+                {name: 'Design', ratio: 0.15},
+                {name: 'Implementation', ratio: 0.35},
+                {name: 'Testing & Integration', ratio: 0.20},
+                {name: 'Deployment', ratio: 0.10 },
+                {name: 'Maintenance', ratio: 0.10}
+            ];
+            let currentStartDate = new Date(start)
+
+            const phasesToInsert = waterfallPhases.map((phase, index) =>{
+                const phaseDays = Math.round(totalDays*phase.ratio);
+                const currentEndDate = new Date(currentStartDate)
+                currentEndDate.setDate(currentStartDate.getDate() + phaseDays)
+
+                const phaseRecord = {
+                    projectId:proj.id,
+                    name: phase.name,
+                    order: index + 1,
+                    startDate: new Date(currentStartDate),
+                    endDate: new Date(currentEndDate)
+                }
+
+                currentStartDate = new Date(currentEndDate)
+                return phaseRecord;
+            })
+            await tx.projectPhase.createMany({data: phasesToInsert})
+        }
+
+        else if(proj.modelType === 'AGILE_SCRUM'){
+            await tx.sprint.create({
+                data:{
+                    projectId: proj.id,
+                    name: 'Sprint 1',
+                    goal: 'Khởi tạo dự án',
+                    status: 'PLANNING',
+                    startDate: proj.startDate
+                }
+            })
+        }
         return proj;
     });
 

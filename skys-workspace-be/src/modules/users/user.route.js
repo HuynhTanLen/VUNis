@@ -13,7 +13,9 @@ const {
     toggleBlock,
     deleteUser,
     getUserLogs,
-    getDashboardStatusStats
+    getDashboardStatusStats,
+    getSalaryUser,
+    updateSalaryUser
 } = require('./user.controller');
 const { protect } = require('../../middleware/auth.middleware');
 const { authorize } = require('../../middleware/rbac.middleware');
@@ -42,5 +44,9 @@ router.delete('/:id', protect, authorize('SUPER_ADMIN', 'USER_ADMIN'), deleteUse
 // Xem lịch sử log hoạt động của người dùng (Super Admin, User Admin, Help Desk Admin)
 router.get('/:id/logs', protect, authorize('SUPER_ADMIN', 'USER_ADMIN', 'HELP_DESK_ADMIN'), getUserLogs);
 
+// Xem và cập nhật mức lương của người dùng
+router.route('/:id/salary')
+    .get( protect, authorize('SUPER_MAIN', 'USER_ADMIN','PROJECT_MANAGER'),getSalaryUser)
+    .put( protect, authorize('SUPER_MAIN', 'USER_ADMIN','PROJECT_MANAGER'),updateSalaryUser)
 module.exports = router;
 

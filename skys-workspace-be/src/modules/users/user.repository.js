@@ -21,9 +21,9 @@ const findAllUsers = async (filter = {}) => {
             isBlocked: true,
             jobTitle: true,
             department: true,
-            company: true,
             avatar: true,
             phone: true,
+            hourlyRate: true,
             lastActiveAt: true,
             createdAt: true,
             updatedAt: true
@@ -44,9 +44,9 @@ const findUserById = async (id) => {
             isBlocked: true,
             jobTitle: true,
             department: true,
-            company: true,
             avatar: true,
             phone: true,
+            hourlyRate: true,
             lastActiveAt: true,
             createdAt: true,
             updatedAt: true
@@ -73,9 +73,9 @@ const updateUserProfile = async (userId, updateData) => {
             isBlocked: true,
             jobTitle: true,
             department: true,
-            company: true,
             avatar: true,
             phone: true,
+            hourlyRate: true,
             lastActiveAt: true,
             createdAt: true,
             updatedAt: true

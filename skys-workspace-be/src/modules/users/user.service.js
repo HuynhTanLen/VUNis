@@ -152,6 +152,28 @@ const getStatusLogsStats = async () => {
     return logs;
 };
 
+
+const getUserSalary = async(userId) => {
+    const user = await userRepo.findUserById(userId)
+    if(!user){
+        const err = new Error('User Not Found')
+        err.statusCode = 404;
+        throw err;
+    }
+    return userMapper.toUserSalaryResponse(user);
+}
+const updateUserSalary = async(userId, hourlyRate) =>{
+    if( typeof hourlyRate !== 'number' ||hourlyRate < 0){
+        const err = new Error('Hourly Rate Invalid');
+        err.statusCode = 400;
+        throw err;
+    }
+
+    const updatedUser = await userRepo.updateUserProfile(userId, {hourlyRate});
+    return userMapper.toUserSalaryResponse(updatedUser)
+
+}
+
 module.exports = {
     getAllUsers,
     getUserById,
@@ -160,5 +182,7 @@ module.exports = {
     toggleBlockUser,
     removeUser,
     getUserLogs,
-    getStatusLogsStats
+    getStatusLogsStats,
+    getUserSalary,
+    updateUserSalary
 };

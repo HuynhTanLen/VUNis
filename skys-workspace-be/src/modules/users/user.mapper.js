@@ -28,9 +28,9 @@ const toUserResponse = (user) => {
         isOnline: !isSuspended && checkIsOnline(user),
         avatar: user.avatar || null,
         phone: user.phone || null,
-        jobTitle: user.jobTitle || 'Software Engineer',
-        department: user.department || 'Engineering',
-        company: user.company || 'KS Organization',
+        jobTitle: user.jobTitle ,
+        department: user.department,
+        company: user.company,
         lastActiveAt: user.lastActiveAt || null,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt
@@ -42,4 +42,13 @@ const toUserListResponse = (users) => {
     return users.map(toUserResponse);
 };
 
-module.exports = { toUserResponse, toUserListResponse };
+const toUserSalaryResponse = (user) =>{
+    if(!user) return null;
+    const baseResponse = toUserResponse(user);
+    return{
+        ...baseResponse,
+        hourlyRate: user.hourlyRate || 0
+    }
+}
+
+module.exports = { toUserResponse, toUserListResponse, toUserSalaryResponse };

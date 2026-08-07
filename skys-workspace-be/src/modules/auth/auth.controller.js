@@ -25,7 +25,7 @@ const loginUser = asyncHandler(async (req, res) => {
         maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
-    res.json({ message: 'Đăng nhập thành công', user: result.user });
+    res.json({ message: 'Đăng nhập thành công', user: result.user, token: result.token });
 });
 
 const logoutUser = asyncHandler(async (req, res) => {

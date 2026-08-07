@@ -47,4 +47,5 @@ class LoginDTO {
     }
 }
 
+
 module.exports = { RegisterDTO, LoginDTO };
