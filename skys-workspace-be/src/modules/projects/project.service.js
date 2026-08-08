@@ -229,6 +229,14 @@ const getSubProjects = async (parentProjectId) => {
     return await projectRepo.findSubProjects(parentProjectId);
 };
 
+const getById = async (projectId) => {
+    const project = await projectRepo.findProjectById(projectId);
+    if (!project) {
+        throw new ProjectNotFoundError();
+    }
+    return projectMapper.toProjectResponse(project);
+};
+
 
 
 module.exports = { 
@@ -241,6 +249,7 @@ module.exports = {
     addMember,
     getMembers,
     getRootProjects,
-    getSubProjects
+    getSubProjects,
+    getById
 };
 

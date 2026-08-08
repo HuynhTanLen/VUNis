@@ -21,6 +21,7 @@ const toProjectResponse = (project, hideBudget = false) => {
         totalDays,
         status: project.status,
         priority: project.priority,
+        modelType: project.modelType,
         owner: project.owner && typeof project.owner === 'object' && project.owner.id ? {
             id: project.owner.id,
             name: project.owner.name,

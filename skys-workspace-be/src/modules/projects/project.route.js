@@ -12,11 +12,11 @@ const {
     createProject, 
     deleteProject, 
     updateProject, 
-    getAllProjectsAdmin, 
+    getAllProjectsAdmin,
     deleteProjectAdmin,
     addProjectMember,
     getProjectMembers,
-    
+    getProjectById
 } = require('./project.controller');
 const { protect } = require('../../middleware/auth.middleware');
 const { authorize, checkProjectPermission } = require('../../middleware/rbac.middleware');
@@ -40,6 +40,7 @@ router.route('/:id/members')
     .post(checkProjectPermission('PROJECT_MANAGER'), addProjectMember);
 
 router.route('/:id')
+    .get(checkProjectPermission(), getProjectById)
     .put(checkProjectPermission('PROJECT_MANAGER'), updateProject)
     .delete(checkProjectPermission('PROJECT_MANAGER'), deleteProject);
 

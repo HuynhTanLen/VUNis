@@ -13,6 +13,11 @@ const getRootProjects = asyncHandler(async (req, res) => {
     res.status(200).json(projects);
 });
 
+const getProjectById = asyncHandler(async (req, res) => {
+    const project = await projectService.getById(req.params.id);
+    res.status(200).json(project);
+});
+
 const getSubProjects = asyncHandler(async (req, res) => {
     const projects = await projectService.getSubProjects(req.params.id);
     res.status(200).json(projects);
@@ -74,6 +79,7 @@ module.exports = {
     getAllProjectsAdmin,
     deleteProjectAdmin,
     addProjectMember,
-    getProjectMembers
+    getProjectMembers,
+    getProjectById
 };
 

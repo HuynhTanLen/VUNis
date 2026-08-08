@@ -9,7 +9,7 @@ const findProjectsByOwner = (userId) => {
             ]
         },
         select: {
-            id: true, name: true, description: true, budget: true, durationWeeks: true, startDate: true, endDate: true, status: true, priority: true, ownerId: true, createdAt: true,
+            id: true, name: true, description: true, budget: true, durationWeeks: true, startDate: true, endDate: true, status: true, priority: true, modelType: true, ownerId: true, createdAt: true,
             owner: { select: { id: true, name: true, email: true, role: true } },
             members: { select: { user: { select: { id: true, name: true, email: true, avatar: true, jobTitle: true } } } }
         },

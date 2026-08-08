@@ -70,6 +70,17 @@ const create = async (dto, userId) => {
         actualCost: dto.actualCost
     };
     const newTask = await taskRepo.createTask(taskData);
+
+    if(targetAssigneeId){
+        await prisma.taskAssignment.create({
+            data: {
+                taskId: newTask.id,
+                userId: targetAssigneeId,
+                startDate: new Date()
+            }
+        })
+    }
+
     return taskMapper.toTaskResponse(newTask);
 };
 
@@ -103,15 +114,55 @@ const update = async (taskId, dto) => {
         }
     });
     if (dto.assigneeId !== undefined) {
-        let aId = dto.assigneeId || null;
-        if (aId) {
-            const userExists = await prisma.user.findUnique({ where: { id: aId } });
-            if (!userExists) {
-                const memberRecord = await prisma.projectMember.findUnique({ where: { id: aId } });
-                if (memberRecord) aId = memberRecord.userId;
+        let aId = dto.assigneeId || null
+        if(aId){
+            const userExists = await prisma.user.findUnique({where: {id:aId}})
+            if(!userExists){
+                const memberRecord = await prisma.projectMember.findUnique({where:{id: aId}})
+                if(memberRecord) aId = memberRecord.userId;
             }
         }
-        updateData.assigneeId = aId;
+
+        if(aId !== task.assigneeId){
+           if(task.assigneeId){
+            const currentAssignment= await prisma.taskAssignment.findFirst({
+                where: {taskId: task.id, userId: task.assigneeId, endDate: null}
+            })
+
+            if(currentAssignment){
+                 const endDate = new Date();
+                const startDate = new Date(currentAssignment.startDate)
+                const hoursWorked = Math.abs(endDate.getTime() - startDate.getTime()) / 36e5;
+
+                const oldUser = await prisma.user.findUnique({
+                    where:{id: task.assigneeId}
+                })
+                const hourlyRate = oldUser?.hourlyRate || 0
+
+                const cost = hourlyRate * hoursWorked;
+
+                await prisma.taskAssignment.update({
+                    where:{id: currentAssignment.id},
+                    data:{
+                        endDate,
+                        hoursWorked,
+                        cost
+                    }
+                })
+            }
+
+           }
+           if(aId) {
+            await prisma.taskAssignment.create({
+                data: {
+                    taskId: task.id,
+                    userId: aId,
+                    startDate: new Date()
+                }
+            })
+        }
+        }
+        
     }
 
     const updatedTask = await taskRepo.updateTask(taskId, updateData);
