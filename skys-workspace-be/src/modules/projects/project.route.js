@@ -44,5 +44,8 @@ router.route('/:id')
     .put(checkProjectPermission('PROJECT_MANAGER'), updateProject)
     .delete(checkProjectPermission('PROJECT_MANAGER'), deleteProject);
 
+const ganttRoute = require('../gantt/gantt.route');
+router.use('/:projectId/gantt', ganttRoute);
+
 module.exports = router;
 
