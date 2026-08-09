@@ -3,6 +3,7 @@ filemd/
 pages/
 picture_to_ai/
 node_modules/
+skill/
 .env
 .DS_Store
 *.zip
