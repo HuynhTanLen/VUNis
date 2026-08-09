@@ -13,7 +13,8 @@ const {
     addSubTask,
     toggleSubTask,
     editSubTask,
-    removeSubTask
+    removeSubTask,
+    getTaskAssignments
 } = require('./task.controller');
 const { protect } = require('../../middleware/auth.middleware');
 const { checkProjectPermission } = require('../../middleware/rbac.middleware');
@@ -34,6 +35,9 @@ router.post('/:id/subtasks', checkProjectPermission(), addSubTask);
 router.patch('/:id/subtasks/:subtaskId/toggle', checkProjectPermission(), toggleSubTask);
 router.put('/:id/subtasks/:subtaskId', checkProjectPermission(), editSubTask);
 router.delete('/:id/subtasks/:subtaskId', checkProjectPermission(), removeSubTask);
+
+// Assignment History Route
+router.get('/:id/assignments', checkProjectPermission(), getTaskAssignments);
 
 module.exports = router;
 

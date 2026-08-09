@@ -1,31 +1,41 @@
 import { useState, useEffect } from 'react';
-import { X, FileText, CheckSquare, MessageSquare, Paperclip, DollarSign, Loader2, Plus, Trash2, Send, CornerDownRight, Reply } from 'lucide-react';
+import { X, FileText, CheckSquare, MessageSquare, Paperclip, DollarSign, Loader2, Plus, Trash2, Send, CornerDownRight, Reply, UserCheck, History, BarChart3, ChevronDown } from 'lucide-react';
 import { getCommentsByTask, createComment, deleteComment } from '../../services/commentService';
 import { getSocket, joinTaskRoom, leaveTaskRoom } from '../../services/socketClient';
+import { getTaskAssignmentsHistory } from '../../services/taskService';
+import { updateTask } from '../../services/taskService';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
+import { useAuth } from '../../hooks/useAuth';
+import GanttChart from './GanttChart';
 
-export default function TaskDetailModal({ isOpen, task, onClose, userList = [], onTaskUpdated }) {
+export default function TaskDetailModal({ isOpen, task, onClose, userList = [], onTaskUpdated, isPM = false, projectId }) {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('description');
   const [comments, setComments] = useState([]);
   const [loadingComments, setLoadingComments] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [replyTo, setReplyTo] = useState(null);
   const [submittingComment, setSubmittingComment] = useState(false);
+  const [statusLoading, setStatusLoading] = useState(false);
 
-  // Subtasks local state (can be extended to sync with API)
-  const [subtasks, setSubtasks] = useState(task?.subtasks || [
-    { id: 1, title: 'Phân tích yêu cầu và mockup UI', done: true },
-    { id: 2, title: 'Xây dựng API backend & database schema', done: false },
-    { id: 3, title: 'Tích hợp giao diện với API', done: false }
-  ]);
+  // Subtasks local state
+  const [subtasks, setSubtasks] = useState(task?.subtasks || []);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
+
+  // TaskAssignment History
+  const [assignments, setAssignments] = useState([]);
+  const [loadingAssignments, setLoadingAssignments] = useState(false);
+
+  // Handover state
+  const [handoverModal, setHandoverModal] = useState({ open: false, newAssigneeId: '' });
+  const [handoverLoading, setHandoverLoading] = useState(false);
 
   useEffect(() => {
     if (isOpen && task) {
-      if (activeTab === 'comments') {
-        loadComments();
-      }
+      setSubtasks(task?.subtasks || []);
+      if (activeTab === 'comments') loadComments();
+      if (activeTab === 'history') loadAssignments();
     }
   }, [isOpen, task, activeTab]);
 
@@ -34,7 +44,6 @@ export default function TaskDetailModal({ isOpen, task, onClose, userList = [], 
     if (isOpen && task?.id) {
       joinTaskRoom(task.id);
       const socket = getSocket();
-
       if (socket) {
         const handleNewComment = (comment) => {
           setComments(prev => {
@@ -42,9 +51,7 @@ export default function TaskDetailModal({ isOpen, task, onClose, userList = [], 
             return [...prev, comment];
           });
         };
-
         socket.on('new_comment', handleNewComment);
-
         return () => {
           socket.off('new_comment', handleNewComment);
           leaveTaskRoom(task.id);
@@ -60,10 +67,24 @@ export default function TaskDetailModal({ isOpen, task, onClose, userList = [], 
       const data = await getCommentsByTask(task.id);
       setComments(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error('Lỗi tải bình luận:', err);
+      console.error('Error loading comments:', err);
       setComments([]);
     } finally {
       setLoadingComments(false);
+    }
+  };
+
+  const loadAssignments = async () => {
+    if (!task?.id) return;
+    try {
+      setLoadingAssignments(true);
+      const data = await getTaskAssignmentsHistory(task.id);
+      setAssignments(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Error loading history:', err);
+      setAssignments([]);
+    } finally {
+      setLoadingAssignments(false);
     }
   };
 
@@ -77,7 +98,7 @@ export default function TaskDetailModal({ isOpen, task, onClose, userList = [], 
       setReplyTo(null);
       loadComments();
     } catch (err) {
-      console.error('Lỗi thêm bình luận:', err);
+      console.error('Error adding comment:', err);
     } finally {
       setSubmittingComment(false);
     }
@@ -88,12 +109,12 @@ export default function TaskDetailModal({ isOpen, task, onClose, userList = [], 
       await deleteComment(commentId);
       loadComments();
     } catch (err) {
-      console.error('Lỗi xóa bình luận:', err);
+      console.error('Error deleting comment:', err);
     }
   };
 
   const getCommentAuthorName = (c) => {
-    return (typeof c.author === 'object' ? c.author?.name : c.author) || c.user?.name || 'Thành viên';
+    return (typeof c.author === 'object' ? c.author?.name : c.author) || c.user?.name || 'Member';
   };
 
   const handleToggleSubtask = (subtaskId) => {
@@ -107,92 +128,159 @@ export default function TaskDetailModal({ isOpen, task, onClose, userList = [], 
     setNewSubtaskTitle('');
   };
 
+  // Handover: Select new Assignee -> open confirmation modal
+  const handleAssigneeChange = async (newAssigneeId) => {
+    try {
+      if (newAssigneeId === task.assigneeId) return;
+      if (task.assigneeId) {
+        setHandoverModal({ open: true, newAssigneeId });
+      } else {
+        await updateTask(task.id, { assigneeId: newAssigneeId, projectId });
+        if (onTaskUpdated) onTaskUpdated();
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error updating assignee');
+    }
+  };
+
+  const handleStatusChange = async (newStatus) => {
+    try {
+      setStatusLoading(true);
+      await updateTask(task.id, { status: newStatus, projectId });
+      if (onTaskUpdated) onTaskUpdated();
+    } catch (err) {
+      console.error(err);
+      alert('Error updating status');
+    } finally {
+      setStatusLoading(false);
+    }
+  };
+
+  // Confirm handover: call PUT /tasks/:id to update assigneeId
+  const handleConfirmHandover = async () => {
+    try {
+      setHandoverLoading(true);
+      await updateTask(task.id, { assigneeId: handoverModal.newAssigneeId });
+      setHandoverModal({ open: false, newAssigneeId: '' });
+      // Reload assignment history
+      await loadAssignments();
+      if (onTaskUpdated) onTaskUpdated();
+    } catch (err) {
+      console.error('Error handing over task:', err);
+    } finally {
+      setHandoverLoading(false);
+    }
+  };
+
   if (!isOpen || !task) return null;
 
-  const issueKey = task.key || `KS-${(task.id || '').toString().slice(-4).toUpperCase() || '101'}`;
+  const issueKey = task.key || `VU-${(task.id || '').toString().slice(-4).toUpperCase() || '101'}`;
   const priorityVariant = task.priority === 'High' || task.priority === 'Urgent' ? 'danger' : task.priority === 'Low' ? 'neutral' : 'warning';
   const statusVariant = task.status === 'Done' ? 'success' : task.status === 'InProgress' ? 'warning' : 'accent';
 
+  const currentAssigneeId = task.assignee?.id || task.assignee || '';
+
+  // Check PM role
+  const isUserPM = isPM || (user && task?.project && false); // fallback to prop
+
   const tabs = [
-    { id: 'description', label: 'Mô tả', icon: FileText },
-    { id: 'subtasks', label: `Subtask (${subtasks.filter(s => s.done).length}/${subtasks.length})`, icon: CheckSquare },
-    { id: 'comments', label: 'Bình luận', icon: MessageSquare },
-    { id: 'attachments', label: 'Đính kèm', icon: Paperclip },
-    { id: 'cost', label: 'Chi phí', icon: DollarSign },
+    { id: 'description', label: 'Description', icon: FileText },
+    { id: 'subtasks', label: `Subtask (${(subtasks || []).filter(s => s.done || s.completed).length}/${(subtasks || []).length})`, icon: CheckSquare },
+    { id: 'comments', label: 'Comments', icon: MessageSquare },
+    { id: 'attachments', label: 'Attachments', icon: Paperclip },
+    { id: 'history', label: 'History', icon: History },
+    { id: 'gantt', label: 'Gantt', icon: BarChart3 },
+    // Cost tab - only for PM
+    ...(isPM ? [{ id: 'cost', label: 'Cost', icon: DollarSign }] : []),
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40 backdrop-blur-sm">
-      <div className="bg-surface rounded-2xl border border-border shadow-xl max-w-2xl w-full flex flex-col max-h-[85vh] overflow-hidden">
-        
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/50 backdrop-blur-sm">
+      <div className="bg-surface rounded-lg border border-border shadow-xl max-w-5xl w-full flex flex-col h-[90vh] overflow-hidden">
+
         {/* HEADER */}
-        <div className="p-5 border-b border-border flex items-start justify-between gap-4 bg-surface shrink-0">
-          <div className="space-y-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-xs font-bold text-accent px-2 py-0.5 rounded bg-accent-soft border border-accent/20">
+        <header className="px-6 py-4 border-b border-border flex items-start justify-between gap-4 bg-surface shrink-0">
+          <div className="space-y-1 min-w-0 flex-1">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="font-mono text-[11px] font-bold text-sub hover:underline cursor-pointer">
                 {issueKey}
               </span>
-              <Badge variant={statusVariant}>{task.status || 'Todo'}</Badge>
-              <Badge variant={priorityVariant}>Mức {task.priority || 'Medium'}</Badge>
             </div>
-            <h2 className="text-base font-bold text-ink leading-snug truncate mt-1">{task.title}</h2>
+            <h2 className="text-xl font-semibold text-ink leading-snug">{task.title}</h2>
           </div>
-
           <button
             onClick={onClose}
             className="p-1.5 text-sub hover:text-ink rounded-lg hover:bg-accent-soft transition-colors focus:outline-none focus:ring-2 focus:ring-accent/20 shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
-        </div>
+        </header>
 
-        {/* TAB NAVIGATION */}
-        <div className="flex bg-bg px-5 pt-2 border-b border-border gap-1 overflow-x-auto shrink-0">
-          {tabs.map(t => {
-            const Icon = t.icon;
-            const isActive = activeTab === t.id;
-            return (
-              <button
-                key={t.id}
-                onClick={() => setActiveTab(t.id)}
-                className={`flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-t-lg transition-colors border-b-2 whitespace-nowrap focus:outline-none ${
-                  isActive
-                    ? 'border-accent text-accent bg-surface font-bold'
-                    : 'border-transparent text-sub hover:text-ink hover:bg-accent-soft/50'
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                <span>{t.label}</span>
-              </button>
-            );
-          })}
-        </div>
+        <div className="flex flex-1 overflow-hidden">
+          {/* MAIN LEFT PANE */}
+          <div className="flex-1 flex flex-col min-w-0 border-r border-border">
+            {/* TAB NAVIGATION */}
+            <nav className="flex px-6 pt-2 border-b border-border gap-4 overflow-x-auto shrink-0" aria-label="Task Detail Tabs">
+              {tabs.map(t => {
+                const Icon = t.icon;
+                const isActive = activeTab === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => setActiveTab(t.id)}
+                    className={`flex items-center gap-1.5 py-2 text-xs font-semibold transition-colors border-b-2 whitespace-nowrap focus:outline-none ${
+                      isActive
+                        ? 'border-accent text-accent'
+                        : 'border-transparent text-sub hover:text-ink'
+                    }`}
+                  >
+                    <span>{t.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
 
-        {/* TAB CONTENT BODY */}
-        <div className="p-6 overflow-y-auto flex-1 space-y-4">
-          
-          {/* TAB 1: DESCRIPTION */}
+            {/* TAB CONTENT BODY */}
+            <div className="p-6 overflow-y-auto flex-1 space-y-6">
+
+          {/* TAB 1: DESCRIPTION + Handover */}
           {activeTab === 'description' && (
             <div className="space-y-4">
               <div className="space-y-1">
-                <label className="label-field">Mô tả công việc</label>
+                <label className="label-field">Description</label>
                 <div className="p-3.5 bg-bg border border-border rounded-lg text-xs text-ink leading-relaxed whitespace-pre-wrap min-h-[100px]">
-                  {task.description || 'Chưa có mô tả chi tiết cho nhiệm vụ này.'}
+                  {task.description || 'No description provided for this task.'}
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4 pt-2">
                 <div className="p-3 bg-bg border border-border rounded-lg space-y-1">
-                  <span className="text-[10px] font-bold text-sub uppercase tracking-wider">Vai trò / Chức năng</span>
+                  <span className="text-[10px] font-bold text-sub uppercase tracking-wider">Role / Function</span>
                   <p className="text-xs font-semibold text-ink font-mono">{task.role || 'Developer'}</p>
                 </div>
                 <div className="p-3 bg-bg border border-border rounded-lg space-y-1">
-                  <span className="text-[10px] font-bold text-sub uppercase tracking-wider">Hạn hoàn thành</span>
+                  <span className="text-[10px] font-bold text-sub uppercase tracking-wider">Due Date</span>
                   <p className="text-xs font-semibold text-ink font-mono">
-                    {task.dueDate ? new Date(task.dueDate).toLocaleDateString('vi-VN') : 'Chưa đặt hạn'}
+                    {(task.dueDate || task.endDate) ? new Date(task.dueDate || task.endDate).toLocaleDateString('en-US') : 'Not set'}
                   </p>
                 </div>
               </div>
+
+
+            </div>
+          )}
+
+          {/* TAB: GANTT CHART */}
+          {activeTab === 'gantt' && (
+            <div className="space-y-4">
+              {projectId ? (
+                <div className="border border-border rounded-xl overflow-hidden bg-bg">
+                  <GanttChart projectId={projectId} isPM={isPM} />
+                </div>
+              ) : (
+                <p className="text-sm text-sub text-center py-10">Project info not found to display chart.</p>
+              )}
             </div>
           )}
 
@@ -200,47 +288,41 @@ export default function TaskDetailModal({ isOpen, task, onClose, userList = [], 
           {activeTab === 'subtasks' && (
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <h4 className="text-xs font-bold text-ink uppercase tracking-wider">Danh sách Subtask</h4>
+                <h4 className="text-xs font-bold text-ink uppercase tracking-wider">Subtasks List</h4>
                 <span className="text-xs text-sub font-mono">
-                  {subtasks.filter(s => s.done).length} / {subtasks.length} hoàn thành
+                  {(subtasks || []).filter(s => s.done || s.completed).length} / {(subtasks || []).length} completed
                 </span>
               </div>
-
-              {/* Progress bar */}
               <div className="h-1.5 bg-bg rounded-full overflow-hidden">
-                <div 
+                <div
                   className="h-full bg-accent transition-all duration-300"
-                  style={{ width: `${subtasks.length > 0 ? (subtasks.filter(s => s.done).length / subtasks.length) * 100 : 0}%` }}
+                  style={{ width: `${(subtasks || []).length > 0 ? ((subtasks || []).filter(s => s.done || s.completed).length / (subtasks || []).length) * 100 : 0}%` }}
                 />
               </div>
-
-              {/* Checklist */}
               <div className="space-y-2">
-                {subtasks.map(st => (
+                {(subtasks || []).map(st => (
                   <label key={st.id} className="flex items-center gap-3 p-2.5 bg-bg border border-border rounded-lg hover:bg-accent-soft/30 transition-colors cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={st.done}
+                      checked={st.done || st.completed || false}
                       onChange={() => handleToggleSubtask(st.id)}
                       className="rounded border-border text-accent focus:ring-accent/40 w-4 h-4"
                     />
-                    <span className={`text-xs text-ink ${st.done ? 'line-through text-sub' : 'font-medium'}`}>
+                    <span className={`text-xs text-ink ${(st.done || st.completed) ? 'line-through text-sub' : 'font-medium'}`}>
                       {st.title}
                     </span>
                   </label>
                 ))}
               </div>
-
-              {/* Add subtask form */}
               <form onSubmit={handleAddSubtask} className="flex gap-2 pt-2">
                 <input
                   type="text"
-                  placeholder="Thêm subtask mới..."
+                  placeholder="Add new subtask..."
                   value={newSubtaskTitle}
                   onChange={(e) => setNewSubtaskTitle(e.target.value)}
                   className="input-field flex-1"
                 />
-                <Button type="submit" variant="secondary" icon={Plus}>Thêm</Button>
+                <Button type="submit" variant="secondary" icon={Plus}>Add</Button>
               </form>
             </div>
           )}
@@ -248,14 +330,12 @@ export default function TaskDetailModal({ isOpen, task, onClose, userList = [], 
           {/* TAB 3: COMMENTS */}
           {activeTab === 'comments' && (
             <div className="space-y-4">
-              <h4 className="text-xs font-bold text-ink uppercase tracking-wider">Trao đổi & Bình luận</h4>
-
-              {/* Comment list */}
+              <h4 className="text-xs font-bold text-ink uppercase tracking-wider">Discussions & Comments</h4>
               {loadingComments ? (
                 <div className="py-8 text-center"><Loader2 className="w-5 h-5 animate-spin text-accent mx-auto" /></div>
               ) : comments.length === 0 ? (
                 <div className="p-6 text-center text-xs text-sub bg-bg border border-dashed border-border rounded-lg">
-                  Chưa có bình luận nào. Hãy gửi phản hồi đầu tiên!
+                  No comments yet. Be the first to share your thoughts!
                 </div>
               ) : (
                 <div className="space-y-3 max-h-[260px] overflow-y-auto pr-1">
@@ -269,7 +349,6 @@ export default function TaskDetailModal({ isOpen, task, onClose, userList = [], 
                     comments.forEach(c => {
                       const cId = c.id || c._id;
                       if (c.parentId && map[c.parentId]) {
-                        // Push to parent replies if not already present
                         if (!map[c.parentId].replies.some(r => (r.id || r._id) === cId)) {
                           map[c.parentId].replies.push(map[cId]);
                         }
@@ -279,38 +358,28 @@ export default function TaskDetailModal({ isOpen, task, onClose, userList = [], 
                         }
                       }
                     });
-
                     return rootComments.map(c => {
                       const authorName = getCommentAuthorName(c);
                       const cId = c.id || c._id;
                       const replies = Array.isArray(c.replies) ? c.replies : [];
-
                       return (
                         <div key={cId} className="p-3 bg-bg border border-border rounded-lg space-y-1.5">
                           <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-ink flex items-center gap-1.5">
-                              {authorName}
-                            </span>
+                            <span className="text-xs font-bold text-ink">{authorName}</span>
                             <div className="flex items-center gap-2">
                               <span className="text-[10px] text-sub font-mono">
                                 {c.createdAt ? new Date(c.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : ''}
                               </span>
-                              <button
-                                type="button"
-                                onClick={() => setReplyTo({ id: cId, authorName })}
-                                className="text-xs text-accent hover:underline flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-accent-soft font-semibold transition-colors"
-                              >
-                                <Reply className="w-3 h-3" /> Trả lời
+                              <button type="button" onClick={() => setReplyTo({ id: cId, authorName })}
+                                className="text-xs text-accent hover:underline flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-accent-soft font-semibold transition-colors">
+                                <Reply className="w-3 h-3" /> Reply
                               </button>
-                              <button onClick={() => handleDeleteComment(cId)} className="text-sub hover:text-danger p-0.5" title="Xóa">
+                              <button onClick={() => handleDeleteComment(cId)} className="text-sub hover:text-danger p-0.5">
                                 <Trash2 className="w-3 h-3" />
                               </button>
                             </div>
                           </div>
-
                           <p className="text-xs text-ink leading-relaxed">{c.content}</p>
-
-                          {/* Nested Replies */}
                           {replies.length > 0 && (
                             <div className="pl-3 border-l-2 border-accent/20 ml-1 space-y-2 mt-2 pt-1">
                               {replies.map(r => {
@@ -322,13 +391,13 @@ export default function TaskDetailModal({ isOpen, task, onClose, userList = [], 
                                       <div className="flex items-center gap-1 text-[11px]">
                                         <CornerDownRight className="w-3 h-3 text-accent shrink-0" />
                                         <span className="font-bold text-ink">{rAuthorName}</span>
-                                        <span className="text-[10px] font-medium text-sub">trả lời <strong className="text-accent">{authorName}</strong></span>
+                                        <span className="text-[10px] font-medium text-sub">replied to <strong className="text-accent">{authorName}</strong></span>
                                       </div>
                                       <div className="flex items-center gap-1.5">
                                         <span className="text-[9px] text-sub font-mono">
                                           {r.createdAt ? new Date(r.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : ''}
                                         </span>
-                                        <button onClick={() => handleDeleteComment(rId)} className="text-sub hover:text-danger p-0.5" title="Xóa">
+                                        <button onClick={() => handleDeleteComment(rId)} className="text-sub hover:text-danger p-0.5">
                                           <Trash2 className="w-2.5 h-2.5" />
                                         </button>
                                       </div>
@@ -345,21 +414,14 @@ export default function TaskDetailModal({ isOpen, task, onClose, userList = [], 
                   })()}
                 </div>
               )}
-
-              {/* Add comment form */}
               <div className="space-y-1.5 pt-2 border-t border-border">
                 {replyTo && (
                   <div className="flex items-center justify-between px-2.5 py-1 bg-accent-soft border border-accent/20 rounded-md text-xs text-accent font-semibold">
                     <span className="flex items-center gap-1.5">
                       <CornerDownRight className="w-3.5 h-3.5 shrink-0" />
-                      Đang trả lời <strong className="font-bold">{replyTo.authorName}</strong>
+                      Replying to <strong className="font-bold">{replyTo.authorName}</strong>
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => setReplyTo(null)}
-                      className="text-sub hover:text-ink p-0.5 rounded"
-                      title="Hủy trả lời"
-                    >
+                    <button type="button" onClick={() => setReplyTo(null)} className="text-sub hover:text-ink p-0.5 rounded">
                       <X className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -367,14 +429,14 @@ export default function TaskDetailModal({ isOpen, task, onClose, userList = [], 
                 <form onSubmit={handleAddComment} className="flex gap-2">
                   <input
                     type="text"
-                    placeholder={replyTo ? `Nhập câu trả lời cho ${replyTo.authorName}...` : "Viết bình luận..."}
+                    placeholder={replyTo ? `Write a reply to ${replyTo.authorName}...` : 'Write a comment...'}
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
                     disabled={submittingComment}
                     className="input-field flex-1"
                   />
                   <Button type="submit" variant="primary" disabled={submittingComment} icon={Send}>
-                    {replyTo ? 'Trả lời' : 'Gửi'}
+                    {replyTo ? 'Reply' : 'Send'}
                   </Button>
                 </form>
               </div>
@@ -385,39 +447,216 @@ export default function TaskDetailModal({ isOpen, task, onClose, userList = [], 
           {activeTab === 'attachments' && (
             <div className="p-8 text-center space-y-2 bg-bg border border-dashed border-border rounded-xl">
               <Paperclip className="w-8 h-8 text-sub mx-auto" />
-              <p className="text-xs font-bold text-ink uppercase tracking-wider">Đính kèm tài liệu</p>
-              <p className="text-xs text-sub">Chức năng đính kèm tệp tin và ảnh sẽ được hỗ trợ ở phiên bản tiếp theo.</p>
+              <p className="text-xs font-bold text-ink uppercase tracking-wider">Attachments</p>
+              <p className="text-xs text-sub">File and image attachments will be supported in the next version.</p>
             </div>
           )}
 
-          {/* TAB 5: COST */}
-          {activeTab === 'cost' && (
-            <div className="space-y-4">
-              <h4 className="text-xs font-bold text-ink uppercase tracking-wider">Chi phí & Dự toán công việc</h4>
+          {/* TAB 5: HISTORY */}
+          {activeTab === 'history' && (
+            <section className="space-y-4" aria-labelledby="history-title">
+              <h4 id="history-title" className="text-xs font-bold text-ink uppercase tracking-wider flex items-center gap-1.5">
+                <History className="w-3.5 h-3.5 text-accent" />
+                Execution History
+              </h4>
+              {loadingAssignments ? (
+                <div className="py-8 text-center"><Loader2 className="w-5 h-5 animate-spin text-accent mx-auto" /></div>
+              ) : assignments.length === 0 ? (
+                <div className="p-6 text-center text-xs text-sub bg-bg border border-dashed border-border rounded-lg">
+                  No assignment history for this task yet.
+                </div>
+              ) : (
+                <ol className="space-y-3 relative border-l-2 border-accent/20 ml-2 pl-4">
+                  {assignments.map((a, idx) => {
+                    const startDate = a.startDate ? new Date(a.startDate) : null;
+                    const endDate = a.endDate ? new Date(a.endDate) : null;
+                    const isActive = !a.endDate;
+                    return (
+                      <li key={a.id} className="relative">
+                        <span className={`absolute -left-6 top-2 w-2.5 h-2.5 rounded-full border-2 border-surface ${isActive ? 'bg-accent' : 'bg-success'}`} />
+                        <article className={`p-3.5 rounded-xl border ${isActive ? 'border-accent/30 bg-accent-soft/20' : 'border-border bg-bg'} space-y-1.5`}>
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="text-xs font-bold text-ink">{a.user?.name || 'Member'}</p>
+                              <p className="text-[11px] text-sub font-mono">{a.user?.email || ''}</p>
+                            </div>
+                            {isActive ? (
+                              <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-accent-soft text-accent border border-accent/20">In Progress</span>
+                            ) : (
+                              <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-success-soft text-success border border-success/20">Completed</span>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap gap-3 text-[11px] text-sub font-mono pt-1">
+                            <time dateTime={startDate?.toISOString()}>
+                              Start: <strong className="text-ink">{startDate ? startDate.toLocaleDateString('en-US') : '—'}</strong>
+                            </time>
+                            {endDate && (
+                              <time dateTime={endDate.toISOString()}>
+                                End: <strong className="text-ink">{endDate.toLocaleDateString('en-US')}</strong>
+                              </time>
+                            )}
+                            {a.hoursWorked > 0 && (
+                              <span>Hours: <strong className="text-ink">{Number(a.hoursWorked).toFixed(1)}h</strong></span>
+                            )}
+                            {isPM && a.cost > 0 && (
+                              <span className="text-success font-bold">Cost: {Number(a.cost).toLocaleString('en-US')} VND</span>
+                            )}
+                          </div>
+                        </article>
+                      </li>
+                    );
+                  })}
+                </ol>
+              )}
+            </section>
+          )}
 
+          {/* TAB 6: COST — PM ONLY */}
+          {activeTab === 'cost' && isPM && (
+            <div className="space-y-4">
+              <h4 className="text-xs font-bold text-ink uppercase tracking-wider">Cost & Estimate</h4>
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-4 bg-bg border border-border rounded-lg space-y-1">
-                  <span className="text-[10px] font-bold text-sub uppercase tracking-wider">Chi phí dự toán</span>
+                  <span className="text-[10px] font-bold text-sub uppercase tracking-wider">Estimated Cost</span>
                   <p className="text-lg font-bold text-ink font-mono">
-                    {task.estimatedCost ? `${Number(task.estimatedCost).toLocaleString()} đ` : '5,000,000 đ'}
+                    {task.estimatedCost ? `${Number(task.estimatedCost).toLocaleString()} VND` : '—'}
                   </p>
                 </div>
                 <div className="p-4 bg-bg border border-border rounded-lg space-y-1">
-                  <span className="text-[10px] font-bold text-sub uppercase tracking-wider">Thời gian thực tế</span>
-                  <p className="text-lg font-bold text-accent font-mono">16 giờ</p>
+                  <span className="text-[10px] font-bold text-sub uppercase tracking-wider">Actual Cost</span>
+                  <p className="text-lg font-bold text-accent font-mono">
+                    {task.actualCost ? `${Number(task.actualCost).toLocaleString()} VND` : '—'}
+                  </p>
                 </div>
               </div>
             </div>
-          )}
-
+            )}
+          </div>
+        </div>
+          
+        {/* RIGHT SIDEBAR: DETAILS */}
+          <div className="w-80 bg-bg p-6 overflow-y-auto shrink-0 flex flex-col gap-6 border-l border-border">
+            <div className="space-y-4">
+              <div className="space-y-1 relative">
+                <span className="text-[10px] font-bold text-sub uppercase">Status</span>
+                <div className="mt-1 relative">
+                  <select 
+                    value={task.status || 'TODO'}
+                    onChange={(e) => handleStatusChange(e.target.value)}
+                    disabled={statusLoading}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                    title="Change Status"
+                  >
+                    <option value="TODO">To Do (TODO)</option>
+                    <option value="IN_PROGRESS">In Progress</option>
+                    <option value="REVIEW">In Review</option>
+                    <option value="DONE">Done (DONE)</option>
+                  </select>
+                  <div className="pointer-events-none w-max">
+                    <Badge variant={statusVariant} className="flex items-center gap-1">
+                      {statusLoading && <Loader2 className="w-3 h-3 animate-spin" />}
+                      {task.status || 'Todo'}
+                      <ChevronDown className="w-3 h-3 opacity-50 ml-1" />
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <span className="text-[10px] font-bold text-sub uppercase">Priority</span>
+                <div className="mt-1">
+                  <Badge variant={priorityVariant}>Level {task.priority || 'Medium'}</Badge>
+                </div>
+              </div>
+              <div className="space-y-1 relative">
+                <span className="text-[10px] font-bold text-sub uppercase">Assignee</span>
+                <div className="mt-1 relative">
+                  <select
+                    value={task.assigneeId || ''}
+                    onChange={(e) => handleAssigneeChange(e.target.value)}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    title="Change Assignee"
+                  >
+                    <option value="">(Unassigned)</option>
+                    {userList.map(u => (
+                      <option key={u.id || u.userId} value={u.userId || u.user?.id || u.id}>
+                        {u.name || u.user?.name || u.email}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="flex items-center gap-2 pointer-events-none hover:bg-surface p-1 -ml-1 rounded transition-colors">
+                    <div className="w-6 h-6 rounded-full bg-accent text-white flex items-center justify-center text-[10px] font-bold shrink-0">
+                      {(task.assignee?.name || task.assignee || 'U').charAt(0).toUpperCase()}
+                    </div>
+                    <span className="text-sm font-semibold text-ink line-clamp-1">{task.assignee?.name || task.assignee || 'Unassigned'}</span>
+                    <ChevronDown className="w-3 h-3 opacity-50 ml-auto shrink-0" />
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <span className="text-[10px] font-bold text-sub uppercase">Reporter</span>
+                <div className="flex items-center gap-2 mt-1">
+                  <div className="w-6 h-6 rounded-full bg-sub text-white flex items-center justify-center text-[10px] font-bold">
+                    PM
+                  </div>
+                  <span className="text-sm font-semibold text-ink">Project Manager</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="border-t border-border pt-4 text-[10px] text-sub space-y-2">
+              <div className="flex justify-between">
+                <span>Created:</span>
+                <span className="font-mono">{new Date().toLocaleDateString('en-US')}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Updated:</span>
+                <span className="font-mono">{new Date().toLocaleDateString('en-US')}</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* FOOTER */}
-        <div className="p-4 border-t border-border flex justify-end bg-surface shrink-0">
-          <Button variant="secondary" onClick={onClose}>Đóng</Button>
-        </div>
-
+        <footer className="p-4 border-t border-border flex justify-end bg-surface shrink-0">
+          <Button variant="secondary" onClick={onClose}>Close</Button>
+        </footer>
       </div>
+
+      {/* HANDOVER CONFIRMATION MODAL */}
+      {handoverModal.open && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-ink/50 backdrop-blur-sm">
+          <div className="bg-surface rounded-2xl border border-border shadow-2xl max-w-md w-full p-6 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="p-2.5 rounded-xl bg-warning-soft text-warning border border-warning/20 shrink-0">
+                <UserCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-ink">Confirm Task Handover</h3>
+                <p className="text-xs text-sub mt-1 leading-relaxed">
+                  The system will automatically <strong className="text-ink">finalize working hours</strong> and <strong className="text-ink">calculate salary</strong> for the current assignee based on their hours and hourly rate. Do you agree to proceed with the handover?
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
+              <button
+                onClick={() => setHandoverModal({ open: false, newAssigneeId: '' })}
+                className="btn-secondary text-xs px-4 py-2"
+                disabled={handoverLoading}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmHandover}
+                disabled={handoverLoading}
+                className="btn-primary text-xs px-4 py-2 flex items-center gap-1.5"
+              >
+                {handoverLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserCheck className="w-3.5 h-3.5" />}
+                Confirm Handover
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -80,12 +80,12 @@ const addMemberToProject = async (dto) => {
                 <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f8fafc; border-radius: 8px;">
                     <h2 style="color: #2563eb;">🎉 Chào mừng bạn đến với dự án "${projectExists.name}"!</h2>
                     <p>Xin chào <b>${targetUser.name}</b>,</p>
-                    <p>Bạn vừa được ban quản trị thêm vào dự án <b>${projectExists.name}</b> trên hệ thống <b>KS Platform</b>.</p>
+                    <p>Bạn vừa được ban quản trị thêm vào dự án <b>${projectExists.name}</b> trên hệ thống <b>VUNIS</b>.</p>
                 </div>
             `;
             await sendEmail({
                 email: targetUser.email,
-                subject: `[KS Platform] Bạn vừa được thêm vào dự án ${projectExists.name}`,
+                subject: `[VUNIS] Bạn vừa được thêm vào dự án ${projectExists.name}`,
                 html: emailHtml
             });
         }

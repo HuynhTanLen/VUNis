@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import { getTasksByProject, createTask, updateTask, updateTaskStatus, deleteTask } from '../../services/taskService';
 import { Kanban, Plus, Loader2, Pencil, Trash2, X, Check, CheckSquare, AlertCircle, Bookmark, CircleDot, Flame, ArrowUp, ArrowDown, Minus, Users, UserPlus } from 'lucide-react';
-import { getProjectMembers } from '../../services/projectService';
+import { getProjectMembers, getGanttData } from '../../services/projectService';
 import TaskDetailModal from './TaskDetailModal';
+import { useAuth } from '../../hooks/useAuth';
+import PriorityIcon from '../ui/PriorityIcon';
+import IssueTypeIcon from '../ui/IssueTypeIcon';
 
 const COLUMNS = [
   { id: 'TODO', label: 'TO DO', statusKeys: ['TODO', 'Todo', 'todo'], color: 'border-t-sub', badgeBg: 'bg-bg text-sub border border-border' },
@@ -12,10 +15,10 @@ const COLUMNS = [
 ];
 
 const PRIORITIES = [
-  { value: 'urgent', label: 'Khẩn cấp', color: 'text-danger bg-danger-soft border-danger/20', icon: Flame },
-  { value: 'high', label: 'Cao', color: 'text-warning bg-warning-soft border-warning/20', icon: ArrowUp },
-  { value: 'medium', label: 'Trung bình', color: 'text-accent bg-accent-soft border-accent/20', icon: Minus },
-  { value: 'low', label: 'Thấp', color: 'text-sub bg-bg border-border', icon: ArrowDown },
+  { value: 'urgent', label: 'Urgent', color: 'text-danger bg-danger-soft border-danger/20', icon: Flame },
+  { value: 'high', label: 'High', color: 'text-warning bg-warning-soft border-warning/20', icon: ArrowUp },
+  { value: 'medium', label: 'Medium', color: 'text-accent bg-accent-soft border-accent/20', icon: Minus },
+  { value: 'low', label: 'Low', color: 'text-sub bg-bg border-border', icon: ArrowDown },
 ];
 
 const ROLES = [
@@ -30,9 +33,9 @@ const ROLES = [
   'DevOps Engineer'
 ];
 
-const EMPTY_TASK = { title: '', role: '', priority: 'medium', assigneeId: '', teamMemberIds: [], startDate: '', endDate: '', estimatedCost: '' };
+const EMPTY_TASK = { title: '', role: '', priority: 'medium', assigneeId: '', teamMemberIds: [], startDate: '', endDate: '', estimatedCost: '', phaseId: '' };
 
-function TaskForm({ initial, userList, onSubmit, onCancel, submitLabel = 'Lưu', title = 'Khởi tạo công việc', projectDateRange }) {
+function TaskForm({ initial, userList, phases = [], onSubmit, onCancel, submitLabel = 'Save', title = 'Create Task', projectDateRange }) {
   const [form, setForm] = useState(initial || EMPTY_TASK);
   const [error, setError] = useState('');
 
@@ -44,7 +47,7 @@ function TaskForm({ initial, userList, onSubmit, onCancel, submitLabel = 'Lưu',
     try {
       await onSubmit(form);
     } catch (err) {
-      setError(err.response?.data?.message || 'Có lỗi xảy ra');
+      setError(err.response?.data?.message || 'An error occurred');
     }
   };
 
@@ -66,49 +69,90 @@ function TaskForm({ initial, userList, onSubmit, onCancel, submitLabel = 'Lưu',
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="space-y-1">
-            <label className="label-field">Tên nhiệm vụ *</label>
-            <input placeholder="VD: Thiết kế mô hình cơ sở dữ liệu" required value={form.title}
+            <label className="label-field">Task Name *</label>
+            <input placeholder="e.g.: Design Database Schema" required value={form.title}
               onChange={e => set('title', e.target.value)} className="input-field" />
           </div>
 
+          <div className="space-y-1 md:col-span-2">
+            <label className="label-field">Task Description</label>
+            <textarea 
+              placeholder="Enter detailed description for this task..." 
+              value={form.description || ''}
+              onChange={e => set('description', e.target.value)} 
+              className="input-field min-h-[80px] resize-y" 
+            />
+          </div>
+
           <div className="space-y-1">
-            <label className="label-field">Độ ưu tiên</label>
+            <label className="label-field">Priority</label>
             <select value={form.priority || 'medium'} onChange={e => set('priority', e.target.value)} className="input-field">
               {PRIORITIES.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
             </select>
           </div>
 
           <div className="space-y-1">
-            <label className="label-field">Vai trò chuyên môn</label>
+            <label className="label-field">Role / Expertise</label>
             <select value={form.role} onChange={e => set('role', e.target.value)} className="input-field">
-              <option value="">Chọn vai trò</option>
+              <option value="">Select Role</option>
               {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
             </select>
           </div>
 
           <div className="space-y-1">
-            <label className="label-field">Trưởng nhóm nhiệm vụ (Main Lead) *</label>
+            <label className="label-field">Task Lead (Assignee) *</label>
             <select value={form.assigneeId} onChange={e => set('assigneeId', e.target.value)} className="input-field" required>
               {userList.length === 0
-                ? <option value="">(Chưa có thành viên dự án)</option>
+                ? <option value="">(No project members yet)</option>
                 : userList.map(u => <option key={u.id || u.userId} value={u.userId || u.user?.id || u.id}>{u.name || u.user?.name || u.email} ({u.role || 'Member'})</option>)
               }
             </select>
           </div>
 
+          {phases && phases.length > 0 && (
+            <div className="space-y-1">
+              <label className="label-field">Phase</label>
+              <select 
+                value={form.phaseId || ''} 
+                onChange={e => {
+                  const newPhaseId = e.target.value;
+                  setForm(prev => {
+                    const next = { ...prev, phaseId: newPhaseId };
+                    if (newPhaseId) {
+                      const selectedPhase = phases.find(p => p.id === newPhaseId);
+                      if (selectedPhase) {
+                        if (selectedPhase.startDate) {
+                          next.startDate = new Date(selectedPhase.startDate).toISOString().split('T')[0];
+                        }
+                        if (selectedPhase.endDate) {
+                          next.endDate = new Date(selectedPhase.endDate).toISOString().split('T')[0];
+                        }
+                      }
+                    }
+                    return next;
+                  });
+                }} 
+                className="input-field"
+              >
+                <option value="">(Not in any Phase)</option>
+                {phases.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </div>
+          )}
+
           <div className="space-y-1">
-            <label className="label-field">Chi phí ước tính (VND)</label>
-            <input type="number" placeholder="VD: 5000000" value={form.estimatedCost}
+            <label className="label-field">Estimated Cost (VND)</label>
+            <input type="number" placeholder="e.g.: 5000000" value={form.estimatedCost}
               onChange={e => set('estimatedCost', e.target.value)} className="input-field font-mono" />
           </div>
 
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
-              <label className="label-field">Ngày bắt đầu</label>
+              <label className="label-field">Start Date</label>
               <input type="date" value={form.startDate} onChange={e => set('startDate', e.target.value)} className="input-field font-mono" />
             </div>
             <div className="space-y-1">
-              <label className="label-field">Ngày kết thúc</label>
+              <label className="label-field">End Date</label>
               <input type="date" value={form.endDate} onChange={e => set('endDate', e.target.value)} className="input-field font-mono" />
             </div>
           </div>
@@ -118,15 +162,15 @@ function TaskForm({ initial, userList, onSubmit, onCancel, submitLabel = 'Lưu',
           <div className="flex items-center justify-between">
             <label className="text-[11px] font-bold text-ink uppercase tracking-wider flex items-center gap-1.5">
               <Users className="w-3.5 h-3.5 text-accent" />
-              Phân công Nhóm thực hiện Nhiệm vụ này
+              Assign Task Team
             </label>
             <span className="text-[10px] text-sub font-mono bg-bg px-2 py-0.5 rounded border border-border">
-              {(form.teamMemberIds?.length || 0) + (form.assigneeId ? 1 : 0)} người tham gia
+              {(form.teamMemberIds?.length || 0) + (form.assigneeId ? 1 : 0)} members
             </span>
           </div>
 
           <p className="text-[10px] text-sub font-normal">
-            Chọn các thành viên phối hợp cùng thực hiện công việc này:
+            Select team members to collaborate on this task:
           </p>
 
           <div className="flex flex-wrap gap-2 bg-bg p-3 rounded-xl border border-border max-h-32 overflow-y-auto">
@@ -162,7 +206,7 @@ function TaskForm({ initial, userList, onSubmit, onCancel, submitLabel = 'Lưu',
                   </span>
                   <span>{u.name || u.email}</span>
                   {isLead ? (
-                    <span className="text-[9px] bg-accent text-white px-1 rounded font-bold">Trưởng nhóm</span>
+                    <span className="text-[9px] bg-accent text-white px-1 rounded font-bold">Lead</span>
                   ) : (
                     <span className="text-[10px] font-bold">{isCoAssignee ? '✓' : '+'}</span>
                   )}
@@ -174,7 +218,7 @@ function TaskForm({ initial, userList, onSubmit, onCancel, submitLabel = 'Lưu',
 
         <div className="flex gap-2 pt-3 border-t border-border justify-end">
           <button type="button" onClick={onCancel} className="btn-secondary">
-            Hủy
+            Cancel
           </button>
           <button type="submit" className="btn-primary">
             {submitLabel}
@@ -249,7 +293,7 @@ function TaskTeamModal({ isOpen, onClose, task, userList, onSaveTaskTeam }) {
         <div className="flex items-center justify-between border-b border-border pb-3">
           <div>
             <span className="text-[10px] font-bold text-accent uppercase tracking-wider bg-accent-soft px-2 py-0.5 rounded border border-accent/20">
-              Quản lý Nhóm Nhiệm Vụ
+              Manage Task Team
             </span>
             <h3 className="font-bold text-ink text-sm mt-1 truncate max-w-sm">
               👥 {task.title}
@@ -262,7 +306,7 @@ function TaskTeamModal({ isOpen, onClose, task, userList, onSaveTaskTeam }) {
 
         <div className="space-y-1.5 bg-bg p-3 rounded-xl border border-border">
           <label className="text-[11px] font-bold text-ink uppercase tracking-wider flex items-center gap-1.5">
-            👑 Trưởng nhóm phụ trách chính (Main Lead)
+            👑 Task Lead (Assignee)
           </label>
           <select
             value={assigneeId}
@@ -279,7 +323,7 @@ function TaskTeamModal({ isOpen, onClose, task, userList, onSaveTaskTeam }) {
 
         <div className="space-y-2">
           <label className="text-[11px] font-bold text-ink uppercase tracking-wider flex items-center justify-between">
-            <span>Thành viên phối hợp trong nhóm (<span className="font-mono">{teamMemberIds.length + (assigneeId ? 1 : 0)}</span> người)</span>
+            <span>Collaborating Members (<span className="font-mono">{teamMemberIds.length + (assigneeId ? 1 : 0)}</span> members)</span>
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-36 overflow-y-auto p-1">
             {userList.map(u => {
@@ -308,7 +352,7 @@ function TaskTeamModal({ isOpen, onClose, task, userList, onSaveTaskTeam }) {
                     <span className="text-xs truncate">{u.name || u.email}</span>
                   </div>
                   <span className="text-[10px] shrink-0 font-bold">
-                    {isLead ? <span className="bg-accent text-white px-1.5 py-0.5 rounded text-[9px]">Trưởng nhóm</span> : isMember ? '✓ Đã chọn' : '+ Thêm'}
+                    {isLead ? <span className="bg-accent text-white px-1.5 py-0.5 rounded text-[9px]">Lead</span> : isMember ? '✓ Selected' : '+ Add'}
                   </span>
                 </div>
               );
@@ -319,13 +363,13 @@ function TaskTeamModal({ isOpen, onClose, task, userList, onSaveTaskTeam }) {
         <div className="space-y-2 pt-2 border-t border-border">
           <label className="text-[11px] font-bold text-ink uppercase tracking-wider flex items-center gap-1">
             <CheckSquare className="w-3.5 h-3.5 text-accent" />
-            Phân công công việc nhỏ trong nhóm (<span className="font-mono">{subtasks.length}</span>)
+            Assign Subtasks (<span className="font-mono">{subtasks.length}</span>)
           </label>
 
           <form onSubmit={handleAddSubtask} className="flex gap-2">
             <input
               type="text"
-              placeholder="VD: Thiết kế UI, Code API..."
+              placeholder="e.g.: UI Design, Code API..."
               value={newSubtaskTitle}
               onChange={e => setNewSubtaskTitle(e.target.value)}
               className="flex-1 input-field"
@@ -342,13 +386,13 @@ function TaskTeamModal({ isOpen, onClose, task, userList, onSaveTaskTeam }) {
               ))}
             </select>
             <button type="submit" className="btn-primary text-xs shrink-0">
-              + Thêm
+              + Add
             </button>
           </form>
 
           <div className="max-h-28 overflow-y-auto space-y-1.5 pr-1">
             {subtasks.length === 0 ? (
-              <p className="text-[11px] text-sub italic text-center py-2">Chưa có công việc con nào được giao cho nhóm</p>
+              <p className="text-[11px] text-sub italic text-center py-2">No subtasks assigned yet</p>
             ) : (
               subtasks.map((st, idx) => {
                 const assignedUser = userList.find(u => (u.id || u.userId) === st.assigneeId);
@@ -367,7 +411,7 @@ function TaskTeamModal({ isOpen, onClose, task, userList, onSaveTaskTeam }) {
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <span className="text-[10px] font-bold text-sub bg-surface border border-border px-1.5 py-0.5 rounded">
-                        👤 {assignedUser?.name || 'Chưa gán'}
+                        👤 {assignedUser?.name || 'Unassigned'}
                       </span>
                       <button onClick={() => handleRemoveSubtask(idx)} className="text-sub hover:text-danger transition-colors cursor-pointer">
                         <Trash2 className="w-3.5 h-3.5" />
@@ -382,10 +426,10 @@ function TaskTeamModal({ isOpen, onClose, task, userList, onSaveTaskTeam }) {
 
         <div className="flex justify-end gap-2 pt-3 border-t border-border">
           <button onClick={onClose} className="btn-secondary">
-            Hủy
+            Cancel
           </button>
           <button onClick={handleSave} className="btn-primary">
-            Lưu thay đổi nhóm
+            Save Team Changes
           </button>
         </div>
 
@@ -395,6 +439,8 @@ function TaskTeamModal({ isOpen, onClose, task, userList, onSaveTaskTeam }) {
 }
 
 export default function KanbanBoard({ projectId, project }) {
+  const { user } = useAuth();
+  const isPM = project?.userRole === 'PROJECT_MANAGER' || project?.userRole === 'Project Manager';
   const [tasks, setTasks] = useState([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
@@ -402,6 +448,7 @@ export default function KanbanBoard({ projectId, project }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [userList, setUserList] = useState([]);
+  const [phases, setPhases] = useState([]);
   const [defaultAssignee, setDefaultAssignee] = useState('');
   const [taskTeamModal, setTaskTeamModal] = useState({ isOpen: false, task: null });
   const [taskDetailModal, setTaskDetailModal] = useState({ isOpen: false, task: null });
@@ -409,18 +456,22 @@ export default function KanbanBoard({ projectId, project }) {
   useEffect(() => {
     const fetchAllData = async () => {
       try {
-        const [tasksData, usersData] = await Promise.all([
+        const [tasksData, usersData, ganttData] = await Promise.all([
           getTasksByProject(projectId),
-          getProjectMembers(projectId)
+          getProjectMembers(projectId),
+          getGanttData(projectId).catch(() => null)
         ]);
 
         setTasks(tasksData);
         setUserList(usersData);
+        if (ganttData && ganttData.phases) {
+          setPhases(ganttData.phases);
+        }
         if (usersData.length > 0) {
           setDefaultAssignee(usersData[0].id || usersData[0].userId);
         }
       } catch (err) {
-        console.error('Lỗi tải dữ liệu Kanban:', err);
+        console.error('Error loading Kanban data:', err);
       } finally {
         setLoading(false);
       }
@@ -433,21 +484,35 @@ export default function KanbanBoard({ projectId, project }) {
       const data = await getTasksByProject(projectId);
       setTasks(data);
     } catch (err) {
-      console.error('Lỗi lấy task:', err);
+      console.error('Error fetching tasks:', err);
     } finally {
       setLoading(false);
     }
   };
 
   const handleCreate = async (form) => {
-    await createTask({ ...form, projectId, assigneeId: form.assigneeId || defaultAssignee });
+    await createTask({
+      projectId,
+      title: form.title,
+      description: form.description,
+      role: form.role,
+      priority: form.priority,
+      assigneeId: form.assigneeId || defaultAssignee,
+      teamMemberIds: form.teamMemberIds || [],
+      startDate: form.startDate || null,
+      endDate: form.endDate || null,
+      estimatedCost: form.estimatedCost !== '' ? Number(form.estimatedCost) : 0,
+      phaseId: form.phaseId || null,
+    });
     setShowCreateForm(false);
     loadTasks();
   };
 
   const handleEdit = async (form) => {
     await updateTask(editingTask.id, {
+      projectId,
       title: form.title,
+      description: form.description,
       role: form.role,
       priority: form.priority,
       assigneeId: form.assigneeId,
@@ -455,6 +520,7 @@ export default function KanbanBoard({ projectId, project }) {
       startDate: form.startDate || null,
       endDate: form.endDate || null,
       estimatedCost: form.estimatedCost !== '' ? Number(form.estimatedCost) : 0,
+      phaseId: form.phaseId || null,
     });
     setEditingTask(null);
     loadTasks();
@@ -466,7 +532,7 @@ export default function KanbanBoard({ projectId, project }) {
       setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...teamData } : t));
       loadTasks();
     } catch (err) {
-      console.error('Lỗi lưu nhóm nhiệm vụ:', err);
+      console.error('Error saving task team:', err);
     }
   };
 
@@ -488,7 +554,7 @@ export default function KanbanBoard({ projectId, project }) {
       setDeleteTaskModal({ isOpen: false, taskId: null, taskTitle: '' });
       loadTasks();
     } catch (err) {
-      console.error('Lỗi xóa công việc:', err);
+      console.error('Error deleting task:', err);
       setDeleteTaskModal({ isOpen: false, taskId: null, taskTitle: '' });
     }
   };
@@ -498,7 +564,7 @@ export default function KanbanBoard({ projectId, project }) {
     try {
       await updateTaskStatus(taskId, newStatus);
     } catch (err) {
-      console.error('Lỗi cập nhật:', err);
+      console.error('Error updating task:', err);
       loadTasks();
     }
   };
@@ -508,11 +574,12 @@ export default function KanbanBoard({ projectId, project }) {
   const progress = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
 
   const projectDateRange = project?.startDate && project?.endDate
-    ? `${new Date(project.startDate).toLocaleDateString('vi-VN')} → ${new Date(project.endDate).toLocaleDateString('vi-VN')} (${project.totalDays} ngày)`
-    : project?.totalDays ? `Tổng ${project.totalDays} ngày` : null;
+    ? `${new Date(project.startDate).toLocaleDateString('en-US')} → ${new Date(project.endDate).toLocaleDateString('en-US')} (${project.totalDays} days)`
+    : project?.totalDays ? `Total ${project.totalDays} days` : null;
 
   const editInitial = editingTask ? {
     title: editingTask.data.title || '',
+    description: editingTask.data.description || '',
     role: editingTask.data.role || '',
     priority: editingTask.data.priority || 'medium',
     assigneeId: editingTask.data.assignee?.id || defaultAssignee,
@@ -520,6 +587,7 @@ export default function KanbanBoard({ projectId, project }) {
     startDate: editingTask.data.startDate ? new Date(editingTask.data.startDate).toISOString().split('T')[0] : '',
     endDate: editingTask.data.endDate ? new Date(editingTask.data.endDate).toISOString().split('T')[0] : '',
     estimatedCost: editingTask.data.estimatedCost || '',
+    phaseId: editingTask.data.phaseId || '',
   } : null;
 
   return (
@@ -528,15 +596,22 @@ export default function KanbanBoard({ projectId, project }) {
       {totalTasks > 0 && (
         <div className="card-clean p-4">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-[11px] font-bold text-sub uppercase tracking-wider">Tiến trình bàn giao</span>
-            <span className="text-xs font-bold text-ink font-mono">{progress}% hoàn thành</span>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-bold text-sub uppercase tracking-wider">Delivery Progress</span>
+              {project?.modelType && (
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-accent-soft text-accent border border-accent/20">
+                  Model: {project.modelType}
+                </span>
+              )}
+            </div>
+            <span className="text-xs font-bold text-ink font-mono">{progress}% complete</span>
           </div>
           <div className="h-1.5 bg-bg rounded-full overflow-hidden">
             <div className="h-full bg-accent rounded-full transition-all duration-300" style={{ width: `${progress}%` }} />
           </div>
           <div className="flex justify-between text-[10px] text-sub mt-2 font-semibold uppercase tracking-wider font-mono">
-            <span>{doneTasks}/{totalTasks} công việc xong</span>
-            <span>{tasks.filter(t => t.status === 'InProgress').length} Đang chạy</span>
+            <span>{doneTasks}/{totalTasks} tasks done</span>
+            <span>{tasks.filter(t => t.status === 'InProgress').length} Active</span>
           </div>
         </div>
       )}
@@ -549,12 +624,12 @@ export default function KanbanBoard({ projectId, project }) {
             className="btn-primary flex-1 sm:flex-none"
           >
             <Plus className="w-3.5 h-3.5" />
-            Thêm nhiệm vụ
+            Add Task
           </button>
 
           <input
             type="text"
-            placeholder="Tìm kiếm công việc..."
+            placeholder="Search tasks..."
             className="input-field w-52"
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
@@ -565,11 +640,11 @@ export default function KanbanBoard({ projectId, project }) {
             onChange={e => setPriorityFilter(e.target.value)}
             className="input-field w-auto cursor-pointer"
           >
-            <option value="all">Tất cả độ ưu tiên</option>
-            <option value="urgent">Khẩn cấp</option>
-            <option value="high">Cao</option>
-            <option value="medium">Trung bình</option>
-            <option value="low">Thấp</option>
+            <option value="all">All Priorities</option>
+            <option value="urgent">Urgent</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
           </select>
         </div>
 
@@ -587,10 +662,11 @@ export default function KanbanBoard({ projectId, project }) {
         <TaskForm
           initial={{ ...EMPTY_TASK, assigneeId: defaultAssignee }}
           userList={userList}
+          phases={phases}
           onSubmit={handleCreate}
           onCancel={() => setShowCreateForm(false)}
-          submitLabel="Khởi tạo"
-          title="Khởi tạo công việc"
+          submitLabel="Create"
+          title="Create New Task"
           projectDateRange={projectDateRange}
         />
       )}
@@ -600,10 +676,11 @@ export default function KanbanBoard({ projectId, project }) {
         <TaskForm
           initial={editInitial}
           userList={userList}
+          phases={phases}
           onSubmit={handleEdit}
           onCancel={() => setEditingTask(null)}
-          submitLabel="Cập nhật"
-          title={`Chỉnh sửa: ${editingTask.data.title}`}
+          submitLabel="Update"
+          title={`Edit: ${editingTask.data.title}`}
           projectDateRange={projectDateRange}
         />
       )}
@@ -612,7 +689,7 @@ export default function KanbanBoard({ projectId, project }) {
       {loading ? (
         <div className="bg-surface rounded-xl border border-border p-20 flex flex-col items-center justify-center">
           <Loader2 className="w-6 h-6 text-accent animate-spin mb-2" />
-          <p className="text-sub text-xs font-semibold">Đang cập nhật bảng công việc...</p>
+          <p className="text-sub text-xs font-semibold">Updating board...</p>
         </div>
       ) : (
         <div className="flex overflow-x-auto snap-x snap-mandatory md:grid md:grid-cols-4 gap-3.5 pb-2 md:pb-0 -mx-4 px-4 md:mx-0 md:px-0">
@@ -625,28 +702,28 @@ export default function KanbanBoard({ projectId, project }) {
             });
 
             return (
-              <div key={col.id} className={`min-w-[260px] w-[80vw] md:w-auto md:min-w-0 snap-center bg-bg/50 rounded-xl border border-border border-t-2 ${col.color} min-h-[420px] flex flex-col flex-shrink-0 md:flex-shrink`}>
-                <div className="px-3.5 py-2.5 bg-surface border-b border-border flex items-center justify-between shrink-0 rounded-t-xl">
+              <div key={col.id} className={`min-w-[280px] w-[80vw] md:w-auto md:min-w-0 snap-center bg-bg/60 rounded-lg min-h-[500px] flex flex-col flex-shrink-0 md:flex-shrink`}>
+                <div className="px-3 py-3 flex items-center justify-between shrink-0">
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-ink text-xs uppercase tracking-wider">{col.label}</span>
-                    <span className={`text-[11px] font-bold font-mono px-2 py-0.5 rounded-full ${col.badgeBg}`}>{colTasks.length}</span>
+                    <span className="font-bold text-sub text-[11px] uppercase tracking-wider">{col.label}</span>
+                    <span className="text-[11px] font-semibold text-sub bg-border/40 px-1.5 rounded">{colTasks.length}</span>
                   </div>
                 </div>
 
                 <div className="p-2 space-y-2.5 flex-1 overflow-y-auto max-h-[calc(100vh-280px)] min-h-[150px]">
                   {colTasks.length === 0 ? (
                     <div className="h-28 border border-dashed border-border rounded-lg flex items-center justify-center text-sub text-xs font-semibold">
-                      Chưa có nhiệm vụ
+                      No tasks
                     </div>
                   ) : (
                     colTasks.map((task) => {
-                      const priorityObj = PRIORITIES.find(p => p.value === (task.priority || 'medium')) || PRIORITIES[2];
-                      const PriorityIcon = priorityObj.icon;
-                      const assigneeName = task.assignee?.name || 'Chưa phân công';
+                      const priority = task.priority || 'medium';
+                      const type = task.type || 'task';
+                      const assigneeName = task.assignee?.name || 'Unassigned';
                       const assigneeInitial = assigneeName.charAt(0).toUpperCase();
                       const subtaskCount = task.subtasks?.length || 0;
                       const completedSubtasks = task.subtasks?.filter(s => s.completed || s.done).length || 0;
-                      const issueKey = task.key || `KS-${(task.id || '').toString().slice(-4).toUpperCase() || '101'}`;
+                      const issueKey = task.key || `VU-${(task.id || '').toString().slice(-4).toUpperCase() || '101'}`;
 
                       const coAssigneeIds = task.teamMemberIds || [];
                       const coAssignees = userList.filter(u => coAssigneeIds.includes(u.id || u.userId) && (u.id || u.userId) !== task.assigneeId);
@@ -656,92 +733,49 @@ export default function KanbanBoard({ projectId, project }) {
                         <div
                           key={task.id}
                           onClick={() => setTaskDetailModal({ isOpen: true, task })}
-                          className="bg-surface rounded-lg border border-border p-3 shadow-sm hover:shadow transition-all duration-150 group space-y-2.5 cursor-pointer"
+                          className="jira-card p-3 group space-y-3"
                         >
                           <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-[11px] font-bold font-mono text-accent">
-                                {issueKey}
-                              </span>
-                            </div>
-
+                            <h4 className="font-semibold text-ink text-sm leading-snug group-hover:text-accent-hover transition-colors line-clamp-2">
+                              {task.title}
+                            </h4>
                             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                               <button
                                 onClick={(e) => { e.stopPropagation(); setEditingTask({ id: task.id, data: task }); setShowCreateForm(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                                 className="p-1 rounded text-sub hover:text-ink hover:bg-accent-soft transition-colors"
-                                title="Sửa công việc"
+                                title="Edit Task"
                               >
-                                <Pencil className="w-3 h-3" />
+                                <Pencil className="w-3.5 h-3.5" />
                               </button>
                               <button
                                 onClick={(e) => handleDeleteClick(task, e)}
                                 className="p-1 rounded text-sub hover:text-danger hover:bg-danger-soft transition-colors"
-                                title="Xóa"
+                                title="Delete Task"
                               >
-                                <Trash2 className="w-3 h-3" />
+                                <Trash2 className="w-3.5 h-3.5" />
                               </button>
                             </div>
                           </div>
 
-                          <h4 className="font-bold text-ink text-xs leading-snug group-hover:text-accent transition-colors">
-                            {task.title}
-                          </h4>
-
-                          <div className="pt-1 flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
-                            <button
-                              onClick={() => setTaskTeamModal({ isOpen: true, task })}
-                              className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-accent-soft hover:bg-accent-soft/80 border border-accent/20 text-accent text-[10px] font-bold transition-colors cursor-pointer"
-                              title="Bấm để cấu hình nhóm thực hiện nhiệm vụ này"
-                            >
-                              <Users className="w-3 h-3 text-accent" />
-                              <span>Nhóm (<strong className="font-mono">{totalTeamCount}</strong>)</span>
-                            </button>
-
-                            <div className="flex -space-x-1.5 overflow-hidden shrink-0">
-                              <div className="w-6 h-6 rounded-full bg-accent text-white font-bold text-[10px] flex items-center justify-center ring-2 ring-surface" title={`Trưởng nhóm: ${assigneeName}`}>
-                                {assigneeInitial}
-                              </div>
-                              {coAssignees.map(ca => (
-                                <div key={ca.id || ca.userId} className="w-6 h-6 rounded-full bg-success text-white font-bold text-[10px] flex items-center justify-center ring-2 ring-surface" title={`Thành viên phối hợp: ${ca.name || ca.email}`}>
-                                  {(ca.name || ca.email || 'M').charAt(0).toUpperCase()}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div className="flex items-center justify-between text-[10px] pt-1 border-t border-border">
+                          <div className="flex items-center justify-between mt-3 text-xs text-sub font-medium">
                             <div className="flex items-center gap-1.5">
-                              <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded border text-[10px] font-semibold ${priorityObj.color}`}>
-                                <PriorityIcon className="w-3 h-3" />
-                                {priorityObj.label}
-                              </span>
-
+                              <IssueTypeIcon type={type} className="w-3.5 h-3.5" />
+                              <span className="text-[11px] hover:underline cursor-pointer">{issueKey}</span>
+                            </div>
+                            
+                            <div className="flex items-center gap-2">
                               {subtaskCount > 0 && (
-                                <span className="inline-flex items-center gap-1 text-sub font-mono font-semibold bg-bg px-1.5 py-0.5 rounded border border-border">
-                                  <CheckSquare className="w-3 h-3 text-sub" />
-                                  {completedSubtasks}/{subtaskCount}
+                                <span className="inline-flex items-center gap-1 bg-surface px-1.5 rounded">
+                                  <CheckSquare className="w-3.5 h-3.5" />
+                                  <span className="text-[10px]">{completedSubtasks}/{subtaskCount}</span>
                                 </span>
                               )}
+                              <PriorityIcon priority={priority} className="w-4 h-4" />
+                              <div className="w-6 h-6 rounded-full bg-accent text-white font-bold text-[10px] flex items-center justify-center shrink-0 shadow-sm" title={`Assignee: ${assigneeName}`}>
+                                {assigneeInitial}
+                              </div>
                             </div>
                           </div>
-
-                          <div className="pt-2 border-t border-border flex items-center justify-between gap-1" onClick={(e) => e.stopPropagation()}>
-                            <span className="text-[10px] font-bold text-sub uppercase">Chuyển:</span>
-                            <div className="flex gap-1 overflow-x-auto">
-                              {COLUMNS.map(targetCol => (
-                                targetCol.id !== task.status && (
-                                  <button
-                                    key={targetCol.id}
-                                    onClick={() => handleMoveTask(task.id, targetCol.id)}
-                                    className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-bg hover:bg-accent-soft hover:text-accent text-sub transition-colors"
-                                  >
-                                    → {targetCol.label}
-                                  </button>
-                                )
-                              ))}
-                            </div>
-                          </div>
-
                         </div>
                       );
                     }))}
@@ -756,22 +790,22 @@ export default function KanbanBoard({ projectId, project }) {
       {deleteTaskModal.isOpen && (
         <div className="fixed inset-0 bg-ink/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-surface rounded-xl border border-border p-5 max-w-sm w-full space-y-4 shadow-xl">
-            <h4 className="font-bold text-ink text-sm">Xác nhận xóa công việc</h4>
+            <h4 className="font-bold text-ink text-sm">Confirm Task Deletion</h4>
             <p className="text-xs text-sub">
-              Bạn có chắc chắn muốn xóa <span className="font-bold text-ink">"{deleteTaskModal.taskTitle}"</span> không?
+              Are you sure you want to delete <span className="font-bold text-ink">"{deleteTaskModal.taskTitle}"</span>?
             </p>
             <div className="flex gap-2 justify-end pt-2">
               <button
                 onClick={() => setDeleteTaskModal({ isOpen: false, taskId: null, taskTitle: '' })}
                 className="btn-secondary"
               >
-                Hủy
+                Cancel
               </button>
               <button
                 onClick={handleConfirmDeleteTask}
                 className="btn-danger"
               >
-                Xóa
+                Delete
               </button>
             </div>
           </div>
@@ -792,6 +826,8 @@ export default function KanbanBoard({ projectId, project }) {
         isOpen={taskDetailModal.isOpen}
         task={taskDetailModal.task}
         userList={userList}
+        isPM={isPM}
+        projectId={project?.id}
         onClose={() => setTaskDetailModal({ isOpen: false, task: null })}
         onTaskUpdated={loadTasks}
       />

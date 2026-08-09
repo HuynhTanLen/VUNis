@@ -62,7 +62,7 @@ app.use('/api/permissions', permissionRoutes);
 app.get('/api/health', (req, res) => {
     res.json({
         status: 'OK',
-        message: 'KS Platform API is running',
+        message: 'VUNIS API is running',
         timestamp: new Date().toISOString()
     });
 });

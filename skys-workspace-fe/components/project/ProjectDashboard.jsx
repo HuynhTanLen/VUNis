@@ -8,12 +8,12 @@ import {
 import { useAuth } from '../../hooks/useAuth';
 
 const STATUS_OPTIONS = [
-  { code: 'active',  label: 'Đang thực hiện' },
-  { code: 'paused',  label: 'Tạm dừng' },
-  { code: 'done',    label: 'Hoàn thành' },
+  { code: 'active',  label: 'In Progress' },
+  { code: 'paused',  label: 'Paused' },
+  { code: 'done',    label: 'Completed' },
 ];
 
-const STATUS_LABEL = { active: 'Đang thực hiện', paused: 'Tạm dừng', done: 'Hoàn thành' };
+const STATUS_LABEL = { active: 'In Progress', paused: 'Paused', done: 'Completed' };
 
 export default function ProjectDashboard({ onSelectProject }) {
   const { user } = useAuth();
@@ -31,7 +31,8 @@ export default function ProjectDashboard({ onSelectProject }) {
     durationWeeks: '', 
     durationUnit: 'weeks',
     startDate: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0], 
-    priority: 'Medium'
+    priority: 'Medium',
+    modelType: 'WATERFALL'
   });
   
   const [editProject, setEditProject] = useState(null);
@@ -50,7 +51,7 @@ export default function ProjectDashboard({ onSelectProject }) {
       const data = await getProjects();
       setProjects(data);
     } catch (err) {
-      console.error('Lỗi lấy dự án:', err);
+      console.error('Error loading projects:', err);
     } finally {
       setLoading(false);
     }
@@ -86,21 +87,21 @@ export default function ProjectDashboard({ onSelectProject }) {
   };
 
   const formatDuration = (weeks) => {
-    if (!weeks) return 'Chưa đặt thời gian';
+    if (!weeks) return 'No duration set';
     const totalDays = Math.round(Number(weeks) * 7);
 
     if (totalDays < 7) {
-      return `${totalDays} ngày`;
+      return `${totalDays} days`;
     }
     if (totalDays % 30 === 0) {
       const months = totalDays / 30;
-      return `${months} tháng (${totalDays} ngày)`;
+      return `${months} months (${totalDays} days)`;
     }
     if (totalDays % 7 === 0) {
       const w = totalDays / 7;
-      return `${w} tuần (${totalDays} ngày)`;
+      return `${w} weeks (${totalDays} days)`;
     }
-    return `${totalDays} ngày`;
+    return `${totalDays} days`;
   };
 
   const handleCreate = async (e) => {
@@ -109,7 +110,7 @@ export default function ProjectDashboard({ onSelectProject }) {
       await createProject({
         name: newProject.name,
         description: newProject.description,
-        scale: newProject.scale || 'Vừa (5-15 người)',
+        scale: newProject.scale || 'Medium (5-15 people)',
         budget: typeof newProject.budget === 'number' ? newProject.budget : 0,
         durationWeeks: newProject.durationWeeks 
           ? (
@@ -120,23 +121,25 @@ export default function ProjectDashboard({ onSelectProject }) {
             )
           : 4,
         startDate: newProject.startDate || undefined,
-        priority: newProject.priority || 'Medium'
+        priority: newProject.priority || 'Medium',
+        modelType: newProject.modelType || 'WATERFALL'
       });
       setNewProject({ 
         name: '', 
         description: '', 
-        scale: 'Vừa (5-15 người)',
+        scale: 'Medium (5-15 people)',
         budget: 0, 
         durationWeeks: '', 
         durationUnit: 'weeks', 
         startDate: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0], 
-        priority: 'Medium' 
+        priority: 'Medium',
+        modelType: 'WATERFALL'
       });
       setShowForm(false);
       loadProjects();
-      showToast('Tạo dự án thành công! Bạn đã được gán vai trò PM.');
+      showToast('Project created successfully! You are assigned as PM.');
     } catch (err) {
-      showToast(err?.response?.data?.message || 'Tạo dự án thất bại!', 'error');
+      showToast(err?.response?.data?.message || 'Failed to create project!', 'error');
     }
   };
 
@@ -162,9 +165,9 @@ export default function ProjectDashboard({ onSelectProject }) {
       });
       setEditProject(null);
       loadProjects();
-      showToast('Cập nhật dự án thành công!');
+      showToast('Project updated successfully!');
     } catch (err) {
-      showToast(err?.response?.data?.message || 'Cập nhật thất bại!', 'error');
+      showToast(err?.response?.data?.message || 'Update failed!', 'error');
     }
   };
 
@@ -188,9 +191,9 @@ export default function ProjectDashboard({ onSelectProject }) {
       await delProject(deleteProjectModal.projectId);
       setDeleteProjectModal({ isOpen: false, projectId: null, projectName: '' });
       loadProjects();
-      showToast('Đã xóa dự án thành công.');
+      showToast('Project deleted successfully.');
     } catch (err) {
-      showToast('Xóa dự án thất bại!', 'error');
+      showToast('Failed to delete project!', 'error');
       setDeleteProjectModal({ isOpen: false, projectId: null, projectName: '' });
     }
   };
@@ -204,9 +207,9 @@ export default function ProjectDashboard({ onSelectProject }) {
       setProjects(prev => prev.map(p =>
         p.id === projectId ? { ...p, status: newStatus } : p
       ));
-      showToast(`Đã cập nhật trạng thái: ${STATUS_LABEL[newStatus] || newStatus}`);
+      showToast(`Status updated: ${STATUS_LABEL[newStatus] || newStatus}`);
     } catch (err) {
-      showToast('Cập nhật trạng thái thất bại: ' + (err?.response?.data?.message || err.message), 'error');
+      showToast('Failed to update status: ' + (err?.response?.data?.message || err.message), 'error');
     }
   };
 
@@ -217,9 +220,9 @@ export default function ProjectDashboard({ onSelectProject }) {
       setProjects(prev => prev.map(p =>
         p.id === projectId ? { ...p, priority: newPriority } : p
       ));
-      showToast('Đã cập nhật mức độ ưu tiên');
+      showToast('Priority updated');
     } catch (err) {
-      showToast('Cập nhật ưu tiên thất bại: ' + (err?.response?.data?.message || err.message), 'error');
+      showToast('Failed to update priority: ' + (err?.response?.data?.message || err.message), 'error');
     }
   };
 
@@ -246,11 +249,11 @@ export default function ProjectDashboard({ onSelectProject }) {
       {/* HEADER & BRIEF */}
       <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
         <div>
-          <h1 id="dashboard-title" className="text-xl font-bold text-ink tracking-tight">
-            Dự án & Không gian làm việc
+          <h1 id="dashboard-title" className="text-2xl font-bold text-ink tracking-tight">
+            Projects & Workspaces
           </h1>
-          <p className="text-xs text-sub mt-1 font-normal leading-relaxed">
-            Xem danh sách, quản lý tiến độ dự án, cấu trúc ngân sách và phân phối nhiệm vụ nhóm.
+          <p className="text-sm text-sub mt-1 font-normal leading-relaxed">
+            View projects, manage progress, budget structure, and distribute team tasks.
           </p>
         </div>
         <button
@@ -258,12 +261,12 @@ export default function ProjectDashboard({ onSelectProject }) {
           className="btn-primary w-full sm:w-auto"
         >
           <FolderPlus className="w-4 h-4" />
-          Tạo dự án mới
+          Create New Project
         </button>
       </header>
 
       {/* BENTO GRID METRICS (F-PATTERN DESIGN) */}
-      <section aria-label="Các chỉ số trạng thái dự án" className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <section aria-label="Project Status Indicators" className="grid grid-cols-1 md:grid-cols-3 gap-4">
         
         {/* Cell 1: Total & Active Projects — LARGE BENTO CELL (Top-Left Priority) */}
         <div 
@@ -274,39 +277,39 @@ export default function ProjectDashboard({ onSelectProject }) {
         >
           <div className="flex justify-between items-start">
             <div>
-              <span className="text-[10px] font-bold text-sub uppercase tracking-wider">Tổng Quan Tiến Độ</span>
+              <span className="text-xs font-bold text-sub uppercase tracking-wider">Progress Overview</span>
               <div className="flex items-baseline gap-3 mt-1">
-                <span className="text-3xl font-extrabold text-ink font-mono">{projects.length}</span>
-                <span className="text-xs text-sub font-mono">Dự án tổng cộng</span>
+                <span className="text-4xl font-extrabold text-ink font-mono">{projects.length}</span>
+                <span className="text-sm text-sub font-mono">Total projects</span>
               </div>
             </div>
-            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-accent-soft text-accent border border-accent/20">
-              Đang chạy: <strong className="font-mono ml-1">{countActive}</strong>
+            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-sm font-semibold bg-accent-soft text-accent border border-accent/20">
+              Active: <strong className="font-mono ml-1">{countActive}</strong>
             </span>
           </div>
 
           <div className="mt-6 space-y-2">
-            <div className="flex justify-between text-xs font-medium text-sub">
-              <span>Phân bổ trạng thái</span>
+            <div className="flex justify-between text-sm font-medium text-sub">
+              <span>Status Distribution</span>
               <span className="font-mono">
-                {projects.length > 0 ? Math.round((countActive / projects.length) * 100) : 0}% đang thực hiện
+                {projects.length > 0 ? Math.round((countActive / projects.length) * 100) : 0}% in progress
               </span>
             </div>
             <div className="h-2 bg-bg rounded-full overflow-hidden flex">
               <div 
                 className="bg-accent h-full transition-all duration-300"
                 style={{ width: `${projects.length > 0 ? (countActive / projects.length) * 100 : 0}%` }}
-                title="Đang thực hiện"
+                title="In Progress"
               />
               <div 
                 className="bg-warning h-full transition-all duration-300"
                 style={{ width: `${projects.length > 0 ? (countPaused / projects.length) * 100 : 0}%` }}
-                title="Tạm dừng"
+                title="Paused"
               />
               <div 
                 className="bg-success h-full transition-all duration-300"
                 style={{ width: `${projects.length > 0 ? (countDone / projects.length) * 100 : 0}%` }}
-                title="Hoàn thành"
+                title="Completed"
               />
             </div>
           </div>
@@ -315,7 +318,7 @@ export default function ProjectDashboard({ onSelectProject }) {
         {/* Cell 2 & 3: Smaller Bento Cards */}
         <div className="space-y-4 flex flex-col justify-between">
           
-          {/* Tạm dừng Card */}
+          {/* Suspended Card */}
           <div 
             onClick={() => setFilter(filter === 'paused' ? 'all' : 'paused')}
             className={`bg-surface rounded-xl border p-4 shadow-sm transition-colors cursor-pointer flex items-center justify-between ${
@@ -323,15 +326,15 @@ export default function ProjectDashboard({ onSelectProject }) {
             }`}
           >
             <div>
-              <span className="text-[10px] font-bold text-sub uppercase tracking-wider">Tạm Dừng</span>
-              <h3 className="text-xl font-bold text-warning font-mono mt-0.5">{loading ? '...' : countPaused}</h3>
+              <span className="text-xs font-bold text-sub uppercase tracking-wider">Paused</span>
+              <h3 className="text-2xl font-bold text-warning font-mono mt-0.5">{loading ? '...' : countPaused}</h3>
             </div>
-            <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-warning-soft text-warning border border-warning/20">
-              Cần xem xét
+            <span className="px-2.5 py-1 rounded-full text-sm font-semibold bg-warning-soft text-warning border border-warning/20">
+              Needs Review
             </span>
           </div>
 
-          {/* Hoàn thành Card */}
+          {/* Completed Card */}
           <div 
             onClick={() => setFilter(filter === 'done' ? 'all' : 'done')}
             className={`bg-surface rounded-xl border p-4 shadow-sm transition-colors cursor-pointer flex items-center justify-between ${
@@ -339,11 +342,11 @@ export default function ProjectDashboard({ onSelectProject }) {
             }`}
           >
             <div>
-              <span className="text-[10px] font-bold text-sub uppercase tracking-wider">Hoàn Thành</span>
-              <h3 className="text-xl font-bold text-success font-mono mt-0.5">{loading ? '...' : countDone}</h3>
+              <span className="text-xs font-bold text-sub uppercase tracking-wider">Completed</span>
+              <h3 className="text-2xl font-bold text-success font-mono mt-0.5">{loading ? '...' : countDone}</h3>
             </div>
-            <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-success-soft text-success border border-success/20">
-              Đã nghiệm thu
+            <span className="px-2.5 py-1 rounded-full text-sm font-semibold bg-success-soft text-success border border-success/20">
+              Delivered
             </span>
           </div>
 
@@ -353,23 +356,23 @@ export default function ProjectDashboard({ onSelectProject }) {
 
       {/* CREATE FORM CARD */}
       {showForm && (
-        <section aria-label="Biểu mẫu khởi tạo dự án" className="bg-surface rounded-xl border border-border p-6 shadow-sm space-y-5">
+        <section aria-label="Project Creation Form" className="bg-surface rounded-xl border border-border p-6 shadow-sm space-y-5">
           <div className="flex items-center justify-between border-b border-border pb-3">
-            <h2 className="font-bold text-ink text-xs uppercase tracking-widest flex items-center gap-2">
+            <h2 className="font-bold text-ink text-sm uppercase tracking-widest flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-accent" />
-              Khởi tạo dự án mới
+              Create New Project
             </h2>
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-accent-soft text-accent border border-accent/20">
-              Bạn sẽ là PM dự án
+              You will be the PM
             </span>
           </div>
 
           <form onSubmit={handleCreate} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="label-field">Tên dự án *</label>
+                <label className="label-field">Project Name *</label>
                 <input
-                  placeholder="VD: Nâng cấp Hệ thống Bán hàng Mobile"
+                  placeholder="e.g., Mobile App Upgrade"
                   required
                   value={newProject.name}
                   onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
@@ -377,24 +380,24 @@ export default function ProjectDashboard({ onSelectProject }) {
                 />
               </div>
               <div className="space-y-1">
-                <label className="label-field">Quy mô dự án</label>
+                <label className="label-field">Project Scale</label>
                 <select
-                  value={newProject.scale || 'Vừa (5-15 người)'}
+                  value={newProject.scale || 'Medium (5-15 members)'}
                   onChange={(e) => setNewProject({ ...newProject, scale: e.target.value })}
                   className="input-field font-semibold"
                 >
-                  <option value="Nhỏ (1-5 người)">Nhỏ (1 - 5 thành viên)</option>
-                  <option value="Vừa (5-15 người)">Vừa (5 - 15 thành viên)</option>
-                  <option value="Lớn (15-50 người)">Lớn (15 - 50 thành viên)</option>
-                  <option value="Doanh nghiệp (>50 người)">Doanh nghiệp (Trên 50 thành viên)</option>
+                  <option value="Small (1-5 members)">Small (1 - 5 members)</option>
+                  <option value="Medium (5-15 members)">Medium (5 - 15 members)</option>
+                  <option value="Large (15-50 members)">Large (15 - 50 members)</option>
+                  <option value="Enterprise (>50 members)">Enterprise (Over 50 members)</option>
                 </select>
               </div>
             </div>
 
             <div className="space-y-1">
-              <label className="label-field">Mô tả mục tiêu dự án</label>
+              <label className="label-field">Project Objective & Description</label>
               <textarea
-                placeholder="Mô tả tóm tắt mục tiêu và phạm vi dự án..."
+                placeholder="Briefly describe the objective and scope of the project..."
                 value={newProject.description}
                 rows={2}
                 onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
@@ -404,11 +407,11 @@ export default function ProjectDashboard({ onSelectProject }) {
             
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-1">
-                <label className="label-field">Thời hạn dự án</label>
+                <label className="label-field">Duration</label>
                 <div className="flex gap-2">
                   <input
                     type="number" min={1} max={260}
-                    placeholder="Số lượng..."
+                    placeholder="Amount..."
                     value={newProject.durationWeeks}
                     onChange={(e) => setNewProject({ ...newProject, durationWeeks: e.target.value })}
                     className="flex-1 input-field font-mono"
@@ -418,16 +421,16 @@ export default function ProjectDashboard({ onSelectProject }) {
                     onChange={(e) => setNewProject({ ...newProject, durationUnit: e.target.value })}
                     className="px-3 py-2 bg-bg border border-border rounded-lg text-xs text-ink font-semibold focus:outline-none focus:border-accent"
                   >
-                    <option value="days">Ngày</option>
-                    <option value="weeks">Tuần</option>
-                    <option value="months">Tháng</option>
-                    <option value="quarters">Quý</option>
+                    <option value="days">Days</option>
+                    <option value="weeks">Weeks</option>
+                    <option value="months">Months</option>
+                    <option value="quarters">Quarters</option>
                   </select>
                 </div>
               </div>
 
               <div className="space-y-1">
-                <label className="label-field">Ngày bắt đầu dự kiến</label>
+                <label className="label-field">Estimated Start Date</label>
                 <input
                   type="date"
                   value={newProject.startDate}
@@ -437,15 +440,29 @@ export default function ProjectDashboard({ onSelectProject }) {
               </div>
 
               <div className="space-y-1">
-                <label className="label-field">Mức độ ưu tiên</label>
+                <label className="label-field">Priority</label>
                 <select
                   value={newProject.priority}
                   onChange={(e) => setNewProject({ ...newProject, priority: e.target.value })}
                   className="input-field font-semibold"
                 >
-                  <option value="Low">Thấp</option>
-                  <option value="Medium">Trung bình</option>
-                  <option value="High">Cao</option>
+                  <option value="Low">Low</option>
+                  <option value="Medium">Medium</option>
+                  <option value="High">High</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="label-field">Management Model</label>
+                <select
+                  value={newProject.modelType}
+                  onChange={(e) => setNewProject({ ...newProject, modelType: e.target.value })}
+                  className="input-field font-semibold"
+                >
+                  <option value="WATERFALL">Waterfall</option>
+                  <option value="AGILE_SCRUM">Agile / Scrum</option>
+                  <option value="KANBAN">Kanban</option>
+                  <option value="V_MODEL">V-Model</option>
+                  <option value="SPIRAL_MODEL">Spiral Model</option>
                 </select>
               </div>
             </div>
@@ -455,14 +472,14 @@ export default function ProjectDashboard({ onSelectProject }) {
                 type="submit" 
                 className="btn-primary"
               >
-                Khởi tạo dự án
+                Create Project
               </button>
               <button 
                 type="button" 
                 onClick={() => setShowForm(false)} 
                 className="btn-secondary"
               >
-                Hủy bỏ
+                Cancel
               </button>
             </div>
           </form>
@@ -471,37 +488,37 @@ export default function ProjectDashboard({ onSelectProject }) {
 
       {/* EDIT PROJECT FORM */}
       {editProject && (
-        <section aria-label="Biểu mẫu chỉnh sửa dự án" className="bg-surface rounded-xl border border-warning/30 p-6 shadow-sm space-y-5">
+        <section aria-label="Edit Project Form" className="bg-surface rounded-xl border border-warning/30 p-6 shadow-sm space-y-5">
           <div className="flex items-center justify-between border-b border-border pb-3">
             <h2 className="font-bold text-ink text-xs uppercase tracking-widest flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-warning" />
-              Chỉnh sửa: {editProject.data.name}
+              Edit: {editProject.data.name}
             </h2>
-            <button onClick={() => setEditProject(null)} className="text-sub hover:text-ink text-xs font-bold transition-colors">✕ Đóng</button>
+            <button onClick={() => setEditProject(null)} className="text-sub hover:text-ink text-xs font-bold transition-colors">✕ Close</button>
           </div>
           <form onSubmit={handleUpdateProject} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="label-field">Tên dự án *</label>
+                <label className="label-field">Project Name *</label>
                 <input required value={editProject.data.name}
                   onChange={e => setEditProject(p => ({ ...p, data: { ...p.data, name: e.target.value } }))}
                   className="input-field font-semibold" />
               </div>
               <div className="space-y-1">
-                <label className="label-field">Quy mô dự án</label>
+                <label className="label-field">Project Scale</label>
                 <select
-                  value={editProject.data.scale || 'Vừa (5-15 người)'}
+                  value={editProject.data.scale || 'Medium (5-15 members)'}
                   onChange={e => setEditProject(p => ({ ...p, data: { ...p.data, scale: e.target.value } }))}
                   className="input-field font-semibold"
                 >
-                  <option value="Nhỏ (1-5 người)">Nhỏ (1 - 5 thành viên)</option>
-                  <option value="Vừa (5-15 người)">Vừa (5 - 15 thành viên)</option>
-                  <option value="Lớn (15-50 người)">Lớn (15 - 50 thành viên)</option>
-                  <option value="Doanh nghiệp (>50 người)">Doanh nghiệp (Trên 50 thành viên)</option>
+                  <option value="Small (1-5 members)">Small (1 - 5 members)</option>
+                  <option value="Medium (5-15 members)">Medium (5 - 15 members)</option>
+                  <option value="Large (15-50 members)">Large (15 - 50 members)</option>
+                  <option value="Enterprise (>50 members)">Enterprise (Over 50 members)</option>
                 </select>
               </div>
               <div className="space-y-1">
-                <label className="label-field">Thời hạn dự án</label>
+                <label className="label-field">Duration</label>
                 <div className="flex gap-2">
                   <input
                     type="number" min={1} max={260}
@@ -514,53 +531,65 @@ export default function ProjectDashboard({ onSelectProject }) {
                     onChange={(e) => setEditDurationUnit(e.target.value)}
                     className="px-3 py-2 bg-bg border border-border rounded-lg text-xs text-ink font-semibold focus:outline-none focus:border-accent"
                   >
-                    <option value="days">Ngày</option>
-                    <option value="weeks">Tuần</option>
-                    <option value="months">Tháng</option>
-                    <option value="quarters">Quý</option>
+                    <option value="days">Days</option>
+                    <option value="weeks">Weeks</option>
+                    <option value="months">Months</option>
+                    <option value="quarters">Quarters</option>
                   </select>
                 </div>
               </div>
 
               <div className="space-y-1">
-                <label className="label-field">Ngày bắt đầu</label>
+                <label className="label-field">Start Date</label>
                 <input type="date" value={editProject.data.startDate ? new Date(editProject.data.startDate).toISOString().split('T')[0] : ''}
                   onChange={e => setEditProject(p => ({ ...p, data: { ...p.data, startDate: e.target.value } }))}
                   className="input-field font-mono" />
               </div>
               <div className="space-y-1">
-                <label className="label-field">Mức ưu tiên</label>
+                <label className="label-field">Priority</label>
                 <select value={editProject.data.priority || 'Medium'}
                   onChange={e => setEditProject(p => ({ ...p, data: { ...p.data, priority: e.target.value } }))}
                   className="input-field font-semibold">
-                  <option value="Low">Thấp</option>
-                  <option value="Medium">Trung bình</option>
-                  <option value="High">Cao</option>
+                  <option value="Low">Low</option>
+                  <option value="Medium">Medium</option>
+                  <option value="High">High</option>
                 </select>
               </div>
               <div className="space-y-1">
-                <label className="label-field">Trạng thái</label>
+                <label className="label-field">Status</label>
                 <select value={editProject.data.status || 'active'}
                   onChange={e => setEditProject(p => ({ ...p, data: { ...p.data, status: e.target.value } }))}
                   className="input-field font-semibold">
-                  <option value="active">Đang thực hiện</option>
-                  <option value="paused">Tạm dừng</option>
-                  <option value="done">Hoàn thành</option>
+                  <option value="active">In Progress</option>
+                  <option value="paused">Paused</option>
+                  <option value="done">Completed</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="label-field">Management Model</label>
+                <select value={editProject.data.modelType || 'WATERFALL'}
+                  onChange={e => setEditProject(p => ({ ...p, data: { ...p.data, modelType: e.target.value } }))}
+                  className="input-field font-semibold">
+                  <option value="WATERFALL">Waterfall</option>
+                  <option value="AGILE_SCRUM">Agile / Scrum</option>
+                  <option value="KANBAN">Kanban</option>
+                  <option value="V_MODEL">V-Model</option>
+                  <option value="SPIRAL_MODEL">Spiral Model</option>
                 </select>
               </div>
             </div>
             <div className="space-y-1">
-              <label className="label-field">Mô tả</label>
+              <label className="label-field">Description</label>
               <textarea rows={2} value={editProject.data.description || ''}
                 onChange={e => setEditProject(p => ({ ...p, data: { ...p.data, description: e.target.value } }))}
                 className="input-field resize-none leading-relaxed" />
             </div>
             <div className="flex gap-2.5 pt-4 border-t border-border">
               <button type="submit" className="btn-primary">
-                Cập nhật dự án
+                Update Project
               </button>
               <button type="button" onClick={() => setEditProject(null)} className="btn-secondary">
-                Hủy bỏ
+                Cancel
               </button>
             </div>
           </form>
@@ -568,26 +597,26 @@ export default function ProjectDashboard({ onSelectProject }) {
       )}
 
       {/* FILTER BAR */}
-      <nav className="flex items-center gap-3 flex-wrap pb-1" aria-label="Bộ lọc danh sách dự án">
-        <span className="text-xs font-semibold text-sub uppercase tracking-wider flex items-center gap-1">
-          <Filter className="w-3.5 h-3.5" /> Bộ lọc:
+      <nav className="flex items-center gap-3 flex-wrap pb-1" aria-label="Project Filter">
+        <span className="text-sm font-semibold text-sub uppercase tracking-wider flex items-center gap-1">
+          <Filter className="w-4 h-4" /> FILTER:
         </span>
         <div className="flex bg-bg p-1 rounded-lg border border-border">
           <button
             onClick={() => setFilter('all')}
-            className={`px-3 py-1 rounded-md text-xs font-semibold transition-colors ${
+            className={`px-3 py-1 rounded-md text-sm font-semibold transition-colors ${
               filter === 'all'
                 ? 'bg-surface text-accent shadow-sm'
                 : 'text-sub hover:text-ink'
             }`}
           >
-            Tất cả
+            All
           </button>
           {STATUS_OPTIONS.map(({ code, label }) => (
             <button
               key={code}
               onClick={() => setFilter(code)}
-              className={`px-3 py-1 rounded-md text-xs font-semibold transition-colors ${
+              className={`px-3 py-1 rounded-md text-sm font-semibold transition-colors ${
                 filter === code
                   ? 'bg-surface text-accent shadow-sm'
                   : 'text-sub hover:text-ink'
@@ -597,23 +626,23 @@ export default function ProjectDashboard({ onSelectProject }) {
             </button>
           ))}
         </div>
-        <span className="ml-auto text-xs text-sub font-mono">{filteredProjects.length} dự án</span>
+        <span className="ml-auto text-xs text-sub font-mono">{filteredProjects.length} projects</span>
       </nav>
 
       {/* PROJECTS LIST GRID */}
       {loading ? (
         <div className="text-center py-20 bg-surface rounded-2xl border border-border">
           <Loader2 className="w-7 h-7 text-accent animate-spin mx-auto mb-3" />
-          <p className="text-sub text-xs font-bold tracking-wider uppercase">Đang đồng bộ dữ liệu dự án...</p>
+          <p className="text-sub text-xs font-bold tracking-wider uppercase">Syncing project data...</p>
         </div>
       ) : filteredProjects.length === 0 ? (
         <div className="text-center py-20 border border-dashed border-border rounded-2xl bg-surface">
           <Layers className="w-10 h-10 text-sub/50 mx-auto mb-3" />
-          <p className="text-ink font-bold text-xs uppercase tracking-wider">Không tìm thấy dự án nào</p>
-          <p className="text-sub text-[11px] mt-1 font-medium">Bấm nút "Tạo dự án mới" để bắt đầu khởi tạo kế hoạch làm việc.</p>
+          <p className="text-ink font-bold text-sm uppercase tracking-wider">No projects found</p>
+          <p className="text-sub text-xs mt-1 font-medium">Click "Create New Project" to get started.</p>
         </div>
       ) : (
-        <section aria-label="Danh sách các dự án hiện có" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <section aria-label="List of Projects" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filteredProjects.map((project) => {
             const status = (project.status || 'active').toLowerCase();
             const priority = (project.priority || 'medium').toLowerCase();
@@ -626,7 +655,7 @@ export default function ProjectDashboard({ onSelectProject }) {
               >
                 <div className="flex items-start justify-between gap-3 pb-2.5 border-b border-border">
                   <div className="space-y-1 flex-1 min-w-0">
-                    <h3 className="text-base font-bold text-ink group-hover:text-accent transition-colors truncate">
+                    <h3 className="text-lg font-bold text-ink group-hover:text-accent transition-colors truncate">
                       {project.name}
                     </h3>
                   </div>
@@ -635,22 +664,22 @@ export default function ProjectDashboard({ onSelectProject }) {
                     <button
                       onClick={(e) => { e.stopPropagation(); handleStartEdit(project); }}
                       className="p-1 text-sub hover:text-warning hover:bg-warning-soft rounded transition-colors"
-                      title="Chỉnh sửa"
+                      title="Edit"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                     </button>
                     <button
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDelClick(project, e); }}
                       className="p-1 text-sub hover:text-danger hover:bg-danger-soft rounded transition-colors"
-                      title="Xóa"
+                      title="Delete"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
 
-                <p className="text-sub text-xs font-normal line-clamp-2 leading-relaxed min-h-[36px] py-0.5">
-                  {project.description || 'Chưa cập nhật mô tả phạm vi công việc dự án.'}
+                <p className="text-sub text-sm font-normal line-clamp-2 leading-relaxed min-h-[36px] py-0.5">
+                  {project.description || 'No project description provided yet.'}
                 </p>
 
                 <div className="flex items-center justify-between gap-2 py-2.5 border-t border-b border-border my-1" onClick={(e) => e.stopPropagation()}>
@@ -665,7 +694,7 @@ export default function ProjectDashboard({ onSelectProject }) {
                           value={normalizedPriority}
                           onChange={(e) => isPM && handleUpdatePriority(project.id, e.target.value)}
                           disabled={!isPM}
-                          className={`text-[11px] font-bold px-3 py-1 rounded-md border cursor-pointer transition-colors outline-none appearance-none ${
+                          className={`text-xs font-bold px-3 py-1.5 rounded-md border cursor-pointer transition-colors outline-none appearance-none ${
                             normalizedPriority === 'High'
                               ? 'text-danger bg-danger-soft border-danger/20'
                               : normalizedPriority === 'Low'
@@ -673,9 +702,9 @@ export default function ProjectDashboard({ onSelectProject }) {
                               : 'text-warning bg-warning-soft border-warning/20'
                           }`}
                         >
-                          <option value="High" className="text-danger bg-surface font-bold">Ưu tiên Cao</option>
-                          <option value="Medium" className="text-warning bg-surface font-bold">Ưu tiên Vừa</option>
-                          <option value="Low" className="text-sub bg-surface font-bold">Ưu tiên Thấp</option>
+                          <option value="High" className="text-danger bg-surface font-bold">High Priority</option>
+                          <option value="Medium" className="text-warning bg-surface font-bold">Medium Priority</option>
+                          <option value="Low" className="text-sub bg-surface font-bold">Low Priority</option>
                         </select>
                       );
                     })()}
@@ -692,7 +721,7 @@ export default function ProjectDashboard({ onSelectProject }) {
                           value={normalizedStatus}
                           onChange={(e) => isPM && handleUpdateStatus(project.id, e.target.value)}
                           disabled={!isPM}
-                          className={`text-[11px] font-bold px-3 py-1 rounded-md border cursor-pointer transition-colors outline-none appearance-none ${
+                          className={`text-xs font-bold px-3 py-1.5 rounded-md border cursor-pointer transition-colors outline-none appearance-none ${
                             normalizedStatus === 'paused'
                               ? 'text-warning bg-warning-soft border-warning/20'
                               : normalizedStatus === 'done'
@@ -700,23 +729,23 @@ export default function ProjectDashboard({ onSelectProject }) {
                               : 'text-accent bg-accent-soft border-accent/20'
                           }`}
                         >
-                          <option value="active" className="text-accent bg-surface font-bold">Đang thực hiện</option>
-                          <option value="paused" className="text-warning bg-surface font-bold">Tạm dừng</option>
-                          <option value="done" className="text-success bg-surface font-bold">Hoàn thành</option>
+                          <option value="active" className="text-accent bg-surface font-bold">In Progress</option>
+                          <option value="paused" className="text-warning bg-surface font-bold">Paused</option>
+                          <option value="done" className="text-success bg-surface font-bold">Completed</option>
                         </select>
                       );
                     })()}
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-3 mt-auto border-t border-border text-xs text-sub font-medium">
+                <div className="flex items-center justify-between pt-3 mt-auto border-t border-border text-sm text-sub font-medium">
                   <div className="flex items-center gap-1.5 font-mono">
-                    <Clock className="w-3.5 h-3.5 text-sub" />
+                    <Clock className="w-4 h-4 text-sub" />
                     <span>{formatDuration(project.durationWeeks)}</span>
                   </div>
                   <div className="flex items-center gap-1 text-ink font-semibold">
-                    <span>Quy mô:</span>
-                    <span>{project.scale || 'Vừa (5-15 người)'}</span>
+                    <span>Scale:</span>
+                    <span>{project.scale || 'Medium (5-15 members)'}</span>
                   </div>
                 </div>
               </article>
@@ -734,9 +763,9 @@ export default function ProjectDashboard({ onSelectProject }) {
                 <Trash2 className="w-5 h-5 text-danger" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-ink">Xác nhận xóa dự án</h3>
+                <h3 className="text-sm font-bold text-ink">Confirm Project Deletion</h3>
                 <p className="text-xs text-sub mt-1 leading-relaxed">
-                  Bạn có chắc chắn muốn xóa dự án "{deleteProjectModal.projectName}"? Thao tác này sẽ xóa toàn bộ dữ liệu công việc liên quan.
+                  Are you sure you want to delete the project "{deleteProjectModal.projectName}"? This action will permanently remove all related tasks and data.
                 </p>
               </div>
             </div>
@@ -746,13 +775,13 @@ export default function ProjectDashboard({ onSelectProject }) {
                 onClick={() => setDeleteProjectModal({ isOpen: false, projectId: null, projectName: '' })}
                 className="btn-secondary text-xs px-4 py-2"
               >
-                Hủy bỏ
+                Cancel
               </button>
               <button
                 onClick={handleConfirmDeleteProject}
                 className="btn-danger text-xs px-4 py-2"
               >
-                Xóa vĩnh viễn
+                Delete Permanently
               </button>
             </div>
           </div>

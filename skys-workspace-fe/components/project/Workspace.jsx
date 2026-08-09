@@ -5,7 +5,7 @@ import SprintManager from './SprintManager';
 import ProjectMembers from './ProjectMembers';
 import { Calendar, Kanban, Award, BarChart3, Users, ChevronLeft } from 'lucide-react';
 
-const STATUS_LABEL = { active: 'Đang thực hiện', paused: 'Tạm dừng', done: 'Hoàn thành' };
+const STATUS_LABEL = { active: 'In Progress', paused: 'Paused', done: 'Completed' };
 
 const STATUS_STYLE = {
   active: 'bg-accent-soft text-accent border-accent/20',
@@ -22,11 +22,13 @@ const STATUS_BAR = {
 export default function Workspace({ project, onBackToProjects }) {
   const [activeTab, setActiveTab] = useState('kanban');
 
+  const isPM = project?.userRole === 'PROJECT_MANAGER' || project?.userRole === 'Project Manager';
+
   const tabs = [
-    { id: 'kanban', label: 'Bảng Kanban', icon: Kanban },
-    { id: 'sprints', label: 'Quản lý Sprint', icon: Award },
-    { id: 'gantt',  label: 'Biểu đồ Gantt', icon: BarChart3 },
-    { id: 'members', label: 'Thành viên', icon: Users },
+    { id: 'kanban', label: 'Board', icon: Kanban },
+    { id: 'sprints', label: 'Backlog (Sprint)', icon: Award },
+    { id: 'gantt',  label: 'Timeline', icon: BarChart3 },
+    { id: 'members', label: 'Members', icon: Users },
   ];
 
   const status = project.status || 'active';
@@ -35,48 +37,43 @@ export default function Workspace({ project, onBackToProjects }) {
   return (
     <article className="space-y-6 max-w-6xl mx-auto w-full px-4 py-6 md:px-8 md:py-10">
       
-      <header className="bg-surface rounded-xl border border-border shadow-sm relative overflow-hidden">
-        <div className={`h-1.5 w-full ${STATUS_BAR[status] || STATUS_BAR.active}`} />
-        
-        <div className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-start gap-3.5 min-w-0">
+      <header className="bg-surface rounded-sm border-b border-border mb-4">
+        <div className="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-start gap-4 min-w-0">
             <button
               onClick={onBackToProjects}
-              className="p-2 bg-accent-soft hover:bg-accent-soft/80 border border-border rounded-lg text-ink transition-colors shrink-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent/40"
-              title="Quay lại danh sách dự án"
+              className="p-1.5 hover:bg-bg rounded-md text-sub transition-colors shrink-0 cursor-pointer focus:outline-none"
+              title="Back to projects list"
             >
-              <ChevronLeft className="w-4 h-4 text-ink font-bold" />
+              <ChevronLeft className="w-5 h-5" />
             </button>
-            <div className="min-w-0 space-y-1">
-              <h1 className="text-lg font-bold text-ink tracking-tight truncate leading-tight">{project.name}</h1>
-              <p className="text-xs text-sub font-normal line-clamp-2 leading-relaxed">
-                {project.description || 'Chưa cập nhật mục tiêu và phạm vi công việc của dự án này.'}
+            <div className="min-w-0 space-y-1.5">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded bg-accent text-white flex items-center justify-center text-[10px] font-bold">PROJ</div>
+                <h1 className="text-xl font-semibold text-ink tracking-tight truncate leading-tight">{project.name}</h1>
+              </div>
+              <p className="text-sm text-sub font-normal line-clamp-2 leading-relaxed">
+                {project.description || 'No objective or scope provided for this project.'}
               </p>
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2 items-center md:self-center shrink-0">
-            <span className={`text-xs font-bold px-3 py-1 rounded-md border ${STATUS_STYLE[status] || STATUS_STYLE.active}`}>
-              {STATUS_LABEL[status] || 'Đang thực hiện'}
+          <div className="flex flex-wrap gap-3 items-center md:self-center shrink-0">
+            <span className={`text-[11px] uppercase font-bold px-2 py-0.5 rounded-sm ${STATUS_STYLE[status] || STATUS_STYLE.active}`}>
+              {STATUS_LABEL[status] || 'In Progress'}
             </span>
             
-            <div className="flex items-center gap-1.5 text-xs font-bold text-ink bg-bg border border-border px-3 py-1 rounded-md">
-              <Calendar className="w-3.5 h-3.5 text-sub" /> 
-              <span className="font-mono">
-                {project.durationWeeks ? `${project.durationWeeks} tuần (${project.totalDays || project.durationWeeks * 7} ngày)` : project.totalDays ? `${project.totalDays} ngày` : 'Chưa đặt thời gian'}
+            <div className="flex items-center gap-1.5 text-xs text-sub bg-bg px-2 py-1 rounded-sm">
+              <Calendar className="w-3.5 h-3.5" /> 
+              <span>
+                {project.durationWeeks ? `${project.durationWeeks} weeks` : project.totalDays ? `${project.totalDays} days` : 'No duration set'}
               </span>
             </div>
-
-            {hasBudget && (
-              <div className="flex items-center gap-1.5 text-xs font-bold text-ink bg-bg border border-border px-3 py-1 rounded-md">
-                <span className="font-mono">{Number(project.budget).toLocaleString()} đ</span>
-              </div>
-            )}
           </div>
         </div>
       </header>
 
-      <nav className="flex bg-bg p-1.5 rounded-xl border border-border w-full sm:w-fit overflow-x-auto gap-1" aria-label="Phân hệ dự án">
+      <nav className="flex px-6 border-b border-border w-full gap-6" aria-label="Project Modules">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -84,23 +81,23 @@ export default function Workspace({ project, onBackToProjects }) {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-colors whitespace-nowrap cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent/40 ${
+              className={`flex items-center gap-2 py-3 text-sm font-medium transition-colors cursor-pointer focus:outline-none border-b-2 ${
                 isActive
-                  ? 'bg-surface text-accent border border-accent/30 shadow-sm'
-                  : 'text-sub hover:text-ink hover:bg-accent-soft border border-transparent'
+                  ? 'text-accent border-accent'
+                  : 'text-sub hover:text-ink border-transparent'
               }`}
             >
-              <Icon className={`w-4 h-4 ${isActive ? 'text-accent' : 'text-sub'}`} />
+              <Icon className="w-4 h-4" />
               <span>{tab.label}</span>
             </button>
           );
         })}
       </nav>
 
-      <section className="pt-1" aria-label="Chi tiết phân hệ">
+      <section className="pt-1" aria-label="Module details">
         {activeTab === 'kanban' && <KanbanBoard projectId={project.id} project={project} />}
         {activeTab === 'sprints' && <SprintManager projectId={project.id} />}
-        {activeTab === 'gantt'  && <GanttChart  projectId={project.id} />}
+        {activeTab === 'gantt'  && <GanttChart  projectId={project.id} isPM={isPM} />}
         {activeTab === 'members' && (
           <ProjectMembers projectId={project.id} project={project} />
         )}

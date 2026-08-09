@@ -48,3 +48,21 @@ export const removeProjectMember = async (memberId) => {
     const response = await api.delete(`/project-members/${memberId}`);
     return response.data;
 }
+
+/**
+ * Lấy dữ liệu Gantt Chart dạng Tree Structure từ backend
+ * @param {string} projectId
+ */
+export const getGanttData = async (projectId) => {
+    const response = await api.get(`/projects/${projectId}/gantt`);
+    return response.data;
+};
+
+/**
+ * Lấy tổng chi phí dự án từ các TaskAssignment
+ * @param {string} projectId
+ */
+export const getProjectTotalCost = async (projectId) => {
+    const response = await api.get(`/projects/${projectId}/cost`);
+    return response.data;
+};

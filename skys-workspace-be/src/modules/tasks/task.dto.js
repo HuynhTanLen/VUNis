@@ -20,12 +20,14 @@ const normalizePriority = (priStr) => {
 class CreateTaskDTO {
     constructor(body) {
         this.title = body.title?.trim();
+        this.description = body.description?.trim() || '';
         this.status = normalizeStatus(body.status);
         this.priority = normalizePriority(body.priority);
         this.subtasks = Array.isArray(body.subtasks) ? body.subtasks : [];
         this.role = body.role?.trim();
         this.assigneeId = body.assigneeId || null;
         this.projectId = body.projectId;
+        this.phaseId = body.phaseId || null;
         this.sprintId = body.sprintId || null;
         this.startDate = body.startDate ? new Date(body.startDate) : null;
         this.endDate = body.endDate ? new Date(body.endDate) : null;
@@ -62,11 +64,13 @@ class CreateTaskDTO {
 class UpdateTaskDTO {
     constructor(body) {
         if (body.title !== undefined) this.title = body.title?.trim();
+        if (body.description !== undefined) this.description = body.description?.trim();
         if (body.status !== undefined) this.status = normalizeStatus(body.status);
         if (body.priority !== undefined) this.priority = normalizePriority(body.priority);
         if (body.subtasks !== undefined && Array.isArray(body.subtasks)) this.subtasks = body.subtasks;
         if (body.role !== undefined) this.role = body.role?.trim();
         if (body.sprintId !== undefined) this.sprint = body.sprintId || null;
+        if (body.phaseId !== undefined) this.phaseId = body.phaseId || null;
         if (body.assigneeId !== undefined) this.assigneeId = body.assigneeId || null;
         if (body.startDate !== undefined) this.startDate = body.startDate ? new Date(body.startDate) : null;
         if (body.endDate !== undefined) this.endDate = body.endDate ? new Date(body.endDate) : null;

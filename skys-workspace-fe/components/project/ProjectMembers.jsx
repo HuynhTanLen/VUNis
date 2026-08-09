@@ -16,7 +16,7 @@ const AVAILABLE_ROLES = [
   { value: 'QA_LEAD', label: '🧪 QA Lead' },
   { value: 'QA_TESTER', label: '🐞 QA Tester' },
   { value: 'DEVOPS_LEAD', label: '🚀 DevOps Lead' },
-  { value: 'MEMBER', label: '👤 Thành viên' }
+  { value: 'MEMBER', label: '👤 Member' }
 ];
 
 export default function ProjectMembers({ projectId, project }) {
@@ -80,7 +80,7 @@ export default function ProjectMembers({ projectId, project }) {
           id: `owner-${projectOwnerId || 'default'}`,
           memberId: `owner-${projectOwnerId || 'default'}`,
           userId: projectOwnerId,
-          name: projectOwner?.name || 'Chủ dự án',
+          name: projectOwner?.name || 'Project Owner',
           email: projectOwner?.email || '',
           role: 'Owner'
         });
@@ -88,13 +88,13 @@ export default function ProjectMembers({ projectId, project }) {
 
       setMembers(list);
     } catch (err) {
-      console.error('Lỗi lấy danh sách thành viên:', err);
+      console.error('Error loading members:', err);
       const ownerIdToUse = projectOwnerId || project?.ownerId;
       setMembers([{
         id: `owner-${ownerIdToUse || 'default'}`,
         memberId: `owner-${ownerIdToUse || 'default'}`,
         userId: ownerIdToUse,
-        name: projectOwner?.name || 'Chủ dự án',
+        name: projectOwner?.name || 'Project Owner',
         email: projectOwner?.email || '',
         role: 'Owner'
       }]);
@@ -111,10 +111,10 @@ export default function ProjectMembers({ projectId, project }) {
       setSubmitting(true);
       setMessage(null);
       await addProjectMember(projectId, email.trim(), selectedRole);
-      setMessage({ type: 'success', text: 'Thêm thành viên vào dự án thành công!' });
+      setMessage({ type: 'success', text: 'Member added successfully!' });
       setEmail('');
     } catch (err) {
-      const errMsg = err.response?.data?.message || err.message || 'Có lỗi xảy ra khi thêm thành viên';
+      const errMsg = err.response?.data?.message || err.message || 'Error adding member';
       setMessage({ type: 'error', text: errMsg });
     } finally {
       setSubmitting(false);
@@ -128,9 +128,9 @@ export default function ProjectMembers({ projectId, project }) {
       setActionLoadingId(memberId);
       await updateProjectMemberRole(memberId, newRole);
       setMembers(prev => prev.map(m => (m.id === memberId || m.memberId === memberId) ? { ...m, role: newRole } : m));
-      setMessage({ type: 'success', text: 'Đã cập nhật vai trò thành viên!' });
+      setMessage({ type: 'success', text: 'Role updated successfully!' });
     } catch (err) {
-      const errMsg = err.response?.data?.message || 'Không thể đổi vai trò thành viên';
+      const errMsg = err.response?.data?.message || 'Error updating role';
       setMessage({ type: 'error', text: errMsg });
     } finally {
       setActionLoadingId(null);
@@ -139,15 +139,15 @@ export default function ProjectMembers({ projectId, project }) {
 
   const handleKickMember = async (memberId, memberName) => {
     if (!memberId || memberId.startsWith('owner-')) return;
-    if (!window.confirm(`Bạn có chắc chắn muốn mời thành viên "${memberName || 'này'}" rời khỏi dự án?`)) return;
+    if (!window.confirm(`Are you sure you want to remove "${memberName || 'this member'}" from the project?`)) return;
 
     try {
       setActionLoadingId(memberId);
       await removeProjectMember(memberId);
       setMembers(prev => prev.filter(m => m.id !== memberId && m.memberId !== memberId));
-      setMessage({ type: 'success', text: 'Đã xóa thành viên khỏi dự án!' });
+      setMessage({ type: 'success', text: 'Member removed successfully!' });
     } catch (err) {
-      const errMsg = err.response?.data?.message || 'Không thể xóa thành viên';
+      const errMsg = err.response?.data?.message || 'Error removing member';
       setMessage({ type: 'error', text: errMsg });
     } finally {
       setActionLoadingId(null);
@@ -161,21 +161,21 @@ export default function ProjectMembers({ projectId, project }) {
           <div>
             <h3 className="font-bold text-ink text-xs uppercase tracking-wider flex items-center gap-1.5 pb-2 border-b border-border">
               <Plus className="w-4 h-4 text-accent" />
-              Mời thành viên mới
+              Invite New Member
             </h3>
             <p className="text-xs text-sub mt-2 font-normal leading-relaxed">
-              Nhập email và chọn vai trò chuyên môn để mời vào làm việc trong dự án.
+              Enter email and select role to invite a member to the project.
             </p>
           </div>
 
           <form onSubmit={handleInvite} className="space-y-3.5">
             <div className="space-y-1.5">
-              <label className="label-field">Email thành viên *</label>
+              <label className="label-field">Member Email *</label>
               <div className="relative">
                 <input
                   type="email"
                   list="system-user-emails"
-                  placeholder="VD: user@gmail.com"
+                  placeholder="e.g.: user@gmail.com"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -199,7 +199,7 @@ export default function ProjectMembers({ projectId, project }) {
             </div>
 
             <div className="space-y-1.5">
-              <label className="label-field">Vai trò ban đầu *</label>
+              <label className="label-field">Initial Role *</label>
               <select
                 value={selectedRole}
                 onChange={(e) => setSelectedRole(e.target.value)}
@@ -234,10 +234,10 @@ export default function ProjectMembers({ projectId, project }) {
               {submitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Đang thêm...
+                  Adding...
                 </>
               ) : (
-                'Thêm vào dự án'
+                'Add to Project'
               )}
             </button>
           </form>
@@ -249,10 +249,10 @@ export default function ProjectMembers({ projectId, project }) {
           <div>
             <h3 className="font-bold text-ink text-xs uppercase tracking-wider flex items-center gap-1.5">
               <Users className="w-4 h-4 text-accent" />
-              Thành viên dự án (<span className="font-mono">{members.length}</span>)
+              Project Members (<span className="font-mono">{members.length}</span>)
             </h3>
             <p className="text-xs text-sub mt-1 font-normal leading-relaxed">
-              Danh sách tất cả thành viên đang tham gia dự án và vai trò của họ.
+              List of all members currently participating in the project and their roles.
             </p>
           </div>
         </div>
@@ -263,17 +263,17 @@ export default function ProjectMembers({ projectId, project }) {
           </div>
         ) : members.length === 0 ? (
           <div className="py-12 text-center text-xs text-sub font-bold uppercase tracking-wider border border-dashed border-border rounded-xl bg-bg">
-            Không có thành viên nào trong dự án.
+            No members in this project yet.
           </div>
         ) : (
           <div className="overflow-hidden border border-border rounded-xl bg-surface">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-bg border-b border-border text-[10px] text-sub uppercase tracking-wider font-extrabold">
-                  <th className="px-4 py-3">Thành viên</th>
+                  <th className="px-4 py-3">Member</th>
                   <th className="px-4 py-3">Email</th>
-                  <th className="px-4 py-3">Vai trò</th>
-                  {isOwner && <th className="px-4 py-3 text-right">Thao tác</th>}
+                  <th className="px-4 py-3">Role</th>
+                  {isOwner && <th className="px-4 py-3 text-right">Actions</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -281,8 +281,8 @@ export default function ProjectMembers({ projectId, project }) {
                   const mId = member.id || member.memberId;
                   const memberRoleStr = typeof member.role === 'object' ? (member.role?.code || member.role?.name || 'MEMBER') : (member.role || 'MEMBER');
                   const isOwnerRole = memberRoleStr === 'Owner' || memberRoleStr === 'PROJECT_MANAGER' || mId?.startsWith?.('owner-');
-                  const memberName = typeof member.name === 'string' ? member.name : (member.user?.name || member.email || 'Thành viên');
-                  const memberEmail = typeof member.email === 'string' ? member.email : (member.user?.email || 'Chưa cập nhật');
+                  const memberName = typeof member.name === 'string' ? member.name : (member.user?.name || member.email || 'Member');
+                  const memberEmail = typeof member.email === 'string' ? member.email : (member.user?.email || 'Not updated');
                   const avatarUrl = member.avatar || member.user?.avatar;
 
                   return (
@@ -307,7 +307,7 @@ export default function ProjectMembers({ projectId, project }) {
                           isOwnerRole ? (
                             <span className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-extrabold rounded-md bg-accent-soft text-accent border border-accent/30 uppercase tracking-wider">
                               <Shield className="w-3 h-3 text-accent" />
-                              Chủ dự án / PM
+                              Project Owner / PM
                             </span>
                           ) : (
                             <select
@@ -334,7 +334,7 @@ export default function ProjectMembers({ projectId, project }) {
                               onClick={() => handleKickMember(mId, member.name)}
                               disabled={actionLoadingId === mId}
                               className="p-1.5 rounded-lg text-sub hover:text-danger hover:bg-danger-soft transition-colors disabled:opacity-50"
-                              title="Xóa khỏi dự án"
+                              title="Remove from project"
                             >
                               {actionLoadingId === mId ? (
                                 <Loader2 className="w-3.5 h-3.5 animate-spin" />

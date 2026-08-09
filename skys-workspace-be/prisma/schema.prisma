@@ -1,4 +1,4 @@
-// Prisma Schema for KS Platform PostgreSQL Database
+// Prisma Schema for VUNIS PostgreSQL Database
 
 datasource db {
   provider = "postgresql"
@@ -177,11 +177,14 @@ model Task {
   leadId        String?
   title         String
   description   String?      @default("")
+  role          String?
   phaseId       String?
   status        TaskStatus   @default(TODO)
   priority      TaskPriority @default(MEDIUM)
   estimatedCost Float        @default(0)
   actualCost    Float        @default(0)
+  startDate     DateTime?
+  endDate       DateTime?
   dueDate       DateTime?
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt

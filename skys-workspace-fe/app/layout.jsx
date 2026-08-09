@@ -15,8 +15,8 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata = {
-  title: 'KS Platform - Enterprise Workspace',
-  description: 'Hệ thống quản lý công việc Skys Workspace',
+  title: 'VUNIS Workspace',
+  description: 'VUNIS Enterprise Agile Task & Project Management System',
 };
 
 export default function RootLayout({ children }) {

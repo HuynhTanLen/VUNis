@@ -1,6 +1,6 @@
 /**
  * @file server.js
- * @description Entry point — Khởi động ứng dụng Skys Platform Backend.
+ * @description Entry point — Khởi động ứng dụng VUNIS Platform Backend.
  * File này CHỈ làm 2 việc: kết nối DB và khởi động HTTP server.
  * Mọi cấu hình khác nằm trong thư mục src/.
  */

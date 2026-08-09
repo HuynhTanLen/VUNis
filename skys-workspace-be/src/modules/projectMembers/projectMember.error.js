@@ -6,7 +6,7 @@ const { NotFoundError } = require('../../shared/errors/AppError');
 
 class ProjectMemberNotFoundError extends NotFoundError {
     constructor() {
-        super('Thành viên dự án');
+        super('Project Member');
     }
 }
 

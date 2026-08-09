@@ -2,14 +2,14 @@ const { AppError, NotFoundError, ForbiddenError } = require('../../shared/errors
 
 class ProjectNotFoundError extends NotFoundError {
     constructor() {
-        super('Dự án');
+        super('Project');
         this.code = 'PROJECT_NOT_FOUND';
     }
 }
 
 class ForbiddenProjectActionError extends ForbiddenError {
-    constructor(action = 'thao tác trên dự án này') {
-        super(`Bạn không có quyền ${action}`);
+    constructor(action = 'perform action on this project') {
+        super(`You do not have permission to ${action}`);
         this.code = 'PROJECT_ACTION_FORBIDDEN';
     }
 }

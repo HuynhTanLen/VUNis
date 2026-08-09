@@ -27,7 +27,7 @@ const sendEmail = async (options) => {
     }
 
     const mailOptions = {
-        from: `"KS Platform Support" <${process.env.EMAIL_USER || 'no-reply@ksplatform.com'}>`,
+        from: `"VUNIS Support" <${process.env.EMAIL_USER || 'no-reply@vunis.com'}>`,
         to: options.email,
         subject: options.subject,
         html: options.html

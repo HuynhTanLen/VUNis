@@ -1,6 +1,7 @@
 const taskService = require('./task.service');
 const { CreateTaskDTO, UpdateTaskDTO } = require('./task.dto');
 const asyncHandler = require('../../shared/constants/asyncHandler');
+const prisma = require('../../config/prisma');
 
 const getTasksByProject = asyncHandler(async (req, res) => {
     const tasks = await taskService.getByProject(req.params.projectId);
@@ -51,6 +52,20 @@ const toggleSubTask = asyncHandler(async (req, res) => {
     res.json(task);
 });
 
+const getTaskAssignments = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const assignments = await prisma.taskAssignment.findMany({
+        where: { taskId: id },
+        include: {
+            user: {
+                select: { id: true, name: true, email: true, avatar: true, hourlyRate: true }
+            }
+        },
+        orderBy: { startDate: 'asc' }
+    });
+    res.status(200).json(assignments);
+});
+
 module.exports = {
     getTasksByProject,
     createTask,
@@ -59,6 +74,7 @@ module.exports = {
     addSubTask,
     removeSubTask,
     editSubTask,
-    toggleSubTask
+    toggleSubTask,
+    getTaskAssignments
 };
 

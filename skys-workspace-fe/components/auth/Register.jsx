@@ -19,8 +19,8 @@ export default function Register({ onSwitchToLogin }) {
   const handleRegister = async (e) => {
     e.preventDefault();
     setError('');
-    if (formData.password.length < 6) { setError('Mật khẩu phải có ít nhất 6 ký tự.'); return; }
-    if (formData.password !== formData.confirmPassword) { setError('Mật khẩu xác nhận không khớp!'); return; }
+    if (formData.password.length < 6) { setError('Password must be at least 6 characters.'); return; }
+    if (formData.password !== formData.confirmPassword) { setError('Passwords do not match!'); return; }
     setLoading(true);
     try {
       await register({
@@ -28,10 +28,10 @@ export default function Register({ onSwitchToLogin }) {
         phone: formData.phone.trim() || undefined, jobTitle: formData.jobTitle.trim() || undefined,
         department: formData.department.trim() || undefined, company: formData.company.trim() || undefined
       });
-      setSuccess('Đăng ký thành công! Đang chuyển hướng sang trang đăng nhập...');
+      setSuccess('Registration successful! Redirecting to login...');
       setTimeout(() => onSwitchToLogin(), 1200);
     } catch (err) {
-      setError(err.response?.data?.message || 'Đăng ký thất bại. Vui lòng kiểm tra lại thông tin.');
+      setError(err.response?.data?.message || 'Registration failed. Please check your information.');
     } finally { setLoading(false); }
   };
 
@@ -39,9 +39,9 @@ export default function Register({ onSwitchToLogin }) {
     <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-bg px-4 py-8 font-sans text-ink antialiased">
       <div className="w-full max-w-lg space-y-5">
         <div className="flex flex-col items-center space-y-2 text-center">
-          <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center text-white font-extrabold text-base">KS</div>
-          <h2 className="text-xl font-bold text-ink tracking-tight">Tạo tài khoản Skys Platform</h2>
-          <p className="text-xs text-sub">Hoàn tất thông tin cá nhân và tổ chức để gia nhập hệ thống.</p>
+          <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center text-white font-extrabold text-base">VU</div>
+          <h2 className="text-xl font-bold text-ink tracking-tight">Create VUNIS Account</h2>
+          <p className="text-xs text-sub">Complete your personal and organizational details to join the platform.</p>
         </div>
 
         <div className="card-clean p-6 md:p-8 space-y-5">
@@ -50,17 +50,17 @@ export default function Register({ onSwitchToLogin }) {
 
           <form onSubmit={handleRegister} className="space-y-4">
             <div className="space-y-3">
-              <h3 className="text-xs font-bold text-sub uppercase tracking-wider">1. Thông tin cơ bản</h3>
+              <h3 className="text-xs font-bold text-sub uppercase tracking-wider">1. Basic Information</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="label-field">Họ và tên <span className="text-danger">*</span></label>
+                  <label className="label-field">Full Name <span className="text-danger">*</span></label>
                   <div className="relative">
                     <input type="text" name="name" required value={formData.name} onChange={handleChange} disabled={loading} className="input-field pl-9" placeholder="Huỳnh Tấn Lên" />
                     <User className="w-4 h-4 text-sub absolute left-3 top-2.5" />
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <label className="label-field">Email liên hệ <span className="text-danger">*</span></label>
+                  <label className="label-field">Email Address <span className="text-danger">*</span></label>
                   <div className="relative">
                     <input type="email" name="email" required value={formData.email} onChange={handleChange} disabled={loading} className="input-field pl-9" placeholder="ten@gmail.com" />
                     <Mail className="w-4 h-4 text-sub absolute left-3 top-2.5" />
@@ -68,7 +68,7 @@ export default function Register({ onSwitchToLogin }) {
                 </div>
               </div>
               <div className="space-y-1">
-                <label className="label-field">Số điện thoại</label>
+                <label className="label-field">Phone Number</label>
                 <div className="relative">
                   <input type="tel" name="phone" value={formData.phone} onChange={handleChange} disabled={loading} className="input-field pl-9" placeholder="0901234567" />
                   <Phone className="w-4 h-4 text-sub absolute left-3 top-2.5" />
@@ -77,17 +77,17 @@ export default function Register({ onSwitchToLogin }) {
             </div>
 
             <div className="space-y-3 pt-2 border-t border-border">
-              <h3 className="text-xs font-bold text-sub uppercase tracking-wider">2. Thông tin công việc & Tổ chức</h3>
+              <h3 className="text-xs font-bold text-sub uppercase tracking-wider">2. Work & Organization</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="label-field">Chức danh / Vị trí</label>
+                  <label className="label-field">Job Title / Role</label>
                   <div className="relative">
                     <input type="text" name="jobTitle" value={formData.jobTitle} onChange={handleChange} disabled={loading} className="input-field pl-9" placeholder="Software Engineer" />
                     <Briefcase className="w-4 h-4 text-sub absolute left-3 top-2.5" />
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <label className="label-field">Phòng ban / Bộ phận</label>
+                  <label className="label-field">Department</label>
                   <div className="relative">
                     <input type="text" name="department" value={formData.department} onChange={handleChange} disabled={loading} className="input-field pl-9" placeholder="Engineering" />
                     <Layers className="w-4 h-4 text-sub absolute left-3 top-2.5" />
@@ -95,7 +95,7 @@ export default function Register({ onSwitchToLogin }) {
                 </div>
               </div>
               <div className="space-y-1">
-                <label className="label-field">Công ty / Tổ chức</label>
+                <label className="label-field">Company / Organization</label>
                 <div className="relative">
                   <input type="text" name="company" value={formData.company} onChange={handleChange} disabled={loading} className="input-field pl-9" placeholder="KS Team Organization" />
                   <Building className="w-4 h-4 text-sub absolute left-3 top-2.5" />
@@ -104,17 +104,17 @@ export default function Register({ onSwitchToLogin }) {
             </div>
 
             <div className="space-y-3 pt-2 border-t border-border">
-              <h3 className="text-xs font-bold text-sub uppercase tracking-wider">3. Bảo mật tài khoản</h3>
+              <h3 className="text-xs font-bold text-sub uppercase tracking-wider">3. Account Security</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="label-field">Mật khẩu <span className="text-danger">*</span></label>
+                  <label className="label-field">Password <span className="text-danger">*</span></label>
                   <div className="relative">
                     <input type="password" name="password" required value={formData.password} onChange={handleChange} disabled={loading} className="input-field pl-9" placeholder="••••••••" />
                     <Lock className="w-4 h-4 text-sub absolute left-3 top-2.5" />
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <label className="label-field">Xác nhận mật khẩu <span className="text-danger">*</span></label>
+                  <label className="label-field">Confirm Password <span className="text-danger">*</span></label>
                   <div className="relative">
                     <input type="password" name="confirmPassword" required value={formData.confirmPassword} onChange={handleChange} disabled={loading} className="input-field pl-9" placeholder="••••••••" />
                     <Lock className="w-4 h-4 text-sub absolute left-3 top-2.5" />
@@ -124,15 +124,15 @@ export default function Register({ onSwitchToLogin }) {
             </div>
 
             <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2 mt-4 disabled:opacity-50">
-              {loading ? (<><Loader2 className="w-4 h-4 animate-spin" />Đang đăng ký...</>) : ('Đăng ký tài khoản')}
+              {loading ? (<><Loader2 className="w-4 h-4 animate-spin" />Registering...</>) : ('Create Account')}
             </button>
           </form>
         </div>
 
         <p className="text-center text-sub text-xs">
-          Đã có tài khoản?{' '}
+          Already have an account?{' '}
           <button onClick={onSwitchToLogin} disabled={loading} className="text-accent hover:text-accent/80 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-accent/20 rounded">
-            Đăng nhập ngay
+            Sign in now
           </button>
         </p>
       </div>

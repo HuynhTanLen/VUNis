@@ -3,6 +3,7 @@ const toTaskResponse = (task) => {
     return {
         id: task.id,
         title: task.title,
+        description: task.description,
         status: task.status,
         priority: task.priority || 'medium',
         subtasks: Array.isArray(task.subtasks) ? task.subtasks.map(st => ({
@@ -13,6 +14,7 @@ const toTaskResponse = (task) => {
         role: task.role,
         project: task.projectId,
         sprint: task.sprintId,
+        phaseId: task.phaseId,
         assignee: task.assignee && typeof task.assignee === 'object' && task.assignee.id ? {
             id: task.assignee.id,
             name: task.assignee.name,
@@ -20,6 +22,7 @@ const toTaskResponse = (task) => {
         } : task.assigneeId,
         startDate: task.startDate,
         endDate: task.endDate,
+        dueDate: task.dueDate,
         estimatedCost: task.estimatedCost ? Number(task.estimatedCost.toString()) : 0,
         actualCost: task.actualCost ? Number(task.actualCost.toString()) : 0,
         createdAt: task.createdAt,

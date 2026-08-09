@@ -34,8 +34,8 @@ export default function AdminDashboard() {
     title: '',
     message: '',
     type: 'lock',
-    confirmText: 'Xác nhận',
-    cancelText: 'Hủy bỏ',
+    confirmText: 'Confirm',
+    cancelText: 'Cancel',
     targetUser: null,
     selectedRole: '',
     onConfirm: null,
@@ -64,7 +64,7 @@ export default function AdminDashboard() {
       setUsers(Array.isArray(usersData) ? usersData : []);
       setProjects(Array.isArray(projectsData) ? projectsData : []);
     } catch (error) {
-      console.error('Lỗi tải dữ liệu quản trị:', error);
+      console.error('Error loading admin data:', error);
       setUsers([]);
       setProjects([]);
     } finally {
@@ -76,13 +76,13 @@ export default function AdminDashboard() {
     const isSuspended = targetUser.status === 'suspended' || Boolean(targetUser.isBlocked);
     setModalConfig({
       isOpen: true,
-      title: isSuspended ? 'Mở Khóa Tài Khoản' : 'Tạm Khóa Tài Khoản',
+      title: isSuspended ? 'Unlock Account' : 'Suspend Account',
       message: isSuspended 
-        ? `Bạn có chắc chắn muốn mở khóa tài khoản của ${targetUser.name} (${targetUser.email})?`
-        : `Bạn có chắc chắn muốn tạm khóa tài khoản của ${targetUser.name} (${targetUser.email})? Người dùng này sẽ không thể đăng nhập.`,
+        ? `Are you sure you want to unlock the account of ${targetUser.name} (${targetUser.email})?`
+        : `Are you sure you want to suspend the account of ${targetUser.name} (${targetUser.email})? This user will not be able to log in.`,
       type: 'lock',
-      confirmText: isSuspended ? 'Mở Khóa' : 'Tạm Khóa',
-      cancelText: 'Hủy bỏ',
+      confirmText: isSuspended ? 'Unlock' : 'Suspend',
+      cancelText: 'Cancel',
       targetUser,
       onConfirm: async () => {
         const newStatus = isSuspended ? 'active' : 'suspended';
@@ -95,11 +95,11 @@ export default function AdminDashboard() {
   const handleChangeRole = (targetUser, newRole) => {
     setModalConfig({
       isOpen: true,
-      title: 'Cập Nhật Quyền Quản Trị',
-      message: `Bạn có chắc muốn đổi quyền của ${targetUser.name} sang "${newRole}"?`,
+      title: 'Update Admin Role',
+      message: `Are you sure you want to change the role of ${targetUser.name} to "${newRole}"?`,
       type: 'role',
-      confirmText: 'Lưu Thay Đổi',
-      cancelText: 'Hủy bỏ',
+      confirmText: 'Save Changes',
+      cancelText: 'Cancel',
       targetUser,
       selectedRole: newRole,
       onConfirm: async () => {
@@ -112,11 +112,11 @@ export default function AdminDashboard() {
   const handleDeleteUser = (targetUser) => {
     setModalConfig({
       isOpen: true,
-      title: 'Xóa Tài Khoản Vĩnh Viễn',
-      message: `Hành động này không thể hoàn tác! Bạn có chắc chắn muốn xóa vĩnh viễn tài khoản của ${targetUser.name}?`,
+      title: 'Permanently Delete Account',
+      message: `This action cannot be undone! Are you sure you want to permanently delete the account of ${targetUser.name}?`,
       type: 'delete',
-      confirmText: 'Xóa Vĩnh Viễn',
-      cancelText: 'Hủy bỏ',
+      confirmText: 'Delete Permanently',
+      cancelText: 'Cancel',
       targetUser,
       onConfirm: async () => {
         await deleteUser(targetUser.id || targetUser._id);
@@ -162,18 +162,18 @@ export default function AdminDashboard() {
       <aside className="w-60 bg-surface border-r border-border p-5 flex flex-col justify-between hidden md:flex shrink-0">
         <div>
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-9 h-9 bg-accent rounded-xl flex items-center justify-center text-white font-extrabold text-base shadow-sm">
-              KS
+            <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center text-white font-black text-xs shadow-sm">
+              VU
             </div>
             <div>
-              <h2 className="text-xs font-bold text-ink leading-tight">KS Platform</h2>
+              <h2 className="text-xs font-bold text-ink leading-tight">VUNIS</h2>
               <span className="text-[10px] text-sub font-semibold tracking-wide uppercase">Admin Console</span>
             </div>
           </div>
 
           <div className="space-y-6">
             <div>
-              <p className="text-[10px] font-bold text-sub uppercase tracking-wider mb-3">Menu Quản trị</p>
+              <p className="text-[10px] font-bold text-sub uppercase tracking-wider mb-3">Admin Menu</p>
               <nav className="space-y-1">
                 <button
                   onClick={() => setActiveNav('users')}
@@ -181,7 +181,7 @@ export default function AdminDashboard() {
                     activeNav === 'users' ? 'text-accent bg-accent-soft' : 'text-sub hover:bg-accent-soft hover:text-ink'
                   }`}
                 >
-                  <LayoutDashboard className="w-4 h-4" /> Quản lý Người dùng
+                  <LayoutDashboard className="w-4 h-4" /> User Management
                 </button>
                 <button
                   onClick={() => setActiveNav('projects')}
@@ -189,7 +189,7 @@ export default function AdminDashboard() {
                     activeNav === 'projects' ? 'text-accent bg-accent-soft' : 'text-sub hover:bg-accent-soft hover:text-ink'
                   }`}
                 >
-                  <Folder className="w-4 h-4" /> Quản lý Dự án
+                  <Folder className="w-4 h-4" /> Project Management
                 </button>
               </nav>
             </div>
@@ -201,13 +201,13 @@ export default function AdminDashboard() {
             onClick={() => router.push('/')}
             className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-sub hover:bg-accent-soft hover:text-ink rounded-lg transition-colors"
           >
-            <Settings className="w-4 h-4 text-sub" /> Trở về Trang chủ
+            <Settings className="w-4 h-4 text-sub" /> Back to Home
           </button>
           <button
             onClick={logout}
             className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-danger hover:bg-danger-soft rounded-lg transition-colors"
           >
-            <LogOut className="w-4 h-4" /> Đăng xuất
+            <LogOut className="w-4 h-4" /> Logout
           </button>
         </div>
       </aside>
@@ -219,7 +219,7 @@ export default function AdminDashboard() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
             <h1 className="text-xl font-bold text-ink tracking-tight">System Admin Console</h1>
-            <p className="text-xs text-sub mt-1">Giám sát tài khoản và phân quyền người dùng toàn hệ thống.</p>
+            <p className="text-xs text-sub mt-1">Monitor accounts and manage user permissions across the system.</p>
           </div>
 
           <div className="flex items-center gap-3">
@@ -227,13 +227,13 @@ export default function AdminDashboard() {
               <Search className="w-4 h-4 text-sub absolute left-3 top-2.5" />
               <input
                 type="text"
-                placeholder="Tìm kiếm theo tên, email..."
+                placeholder="Search by name, email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="input-field pl-9 w-64"
               />
             </div>
-            <Button variant="secondary" icon={RefreshCw} onClick={loadData}>Tải lại</Button>
+            <Button variant="secondary" icon={RefreshCw} onClick={loadData}>Reload</Button>
             <NotificationPopover />
           </div>
         </div>
@@ -245,9 +245,9 @@ export default function AdminDashboard() {
           <div className="md:col-span-2 bg-surface rounded-xl border border-border p-6 flex flex-col justify-between shadow-sm relative overflow-hidden">
             <div className="flex items-start justify-between">
               <div>
-                <span className="text-[10px] font-bold text-sub uppercase tracking-wider">Hệ Thống Tải Khoản</span>
+                <span className="text-[10px] font-bold text-sub uppercase tracking-wider">System Accounts</span>
                 <h3 className="text-3xl font-extrabold text-ink font-mono mt-1">{users.length}</h3>
-                <p className="text-xs text-sub mt-1">Tổng người dùng đã đăng ký trên hệ thống</p>
+                <p className="text-xs text-sub mt-1">Total registered users on the platform</p>
               </div>
               <div className="p-3 bg-accent-soft text-accent rounded-xl border border-accent/20">
                 <Users className="w-6 h-6" />
@@ -257,8 +257,8 @@ export default function AdminDashboard() {
             {/* User Activity & Status Progress Bar */}
             <div className="mt-6 space-y-2">
               <div className="flex justify-between text-xs font-medium text-sub">
-                <span>Trạng thái hoạt động</span>
-                <span className="font-mono">{activeCount} hoạt động / {suspendedCount} bị khóa</span>
+                <span>Activity Status</span>
+                <span className="font-mono">{activeCount} active / {suspendedCount} suspended</span>
               </div>
               <div className="h-2 bg-bg rounded-full overflow-hidden flex">
                 <div 
@@ -274,13 +274,13 @@ export default function AdminDashboard() {
                 <div 
                   className="bg-danger h-full transition-all duration-300"
                   style={{ width: `${users.length > 0 ? (suspendedCount / users.length) * 0 : 0}%` }}
-                  title="Khóa"
+                  title="Suspended"
                 />
               </div>
               <div className="flex items-center gap-4 text-[11px] text-sub pt-1 font-mono">
                 <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-success"></span> Online ({onlineCount})</span>
                 <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-accent"></span> Offline ({activeCount - onlineCount})</span>
-                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-danger"></span> Bị khóa ({suspendedCount})</span>
+                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-danger"></span> Suspended ({suspendedCount})</span>
               </div>
             </div>
           </div>
@@ -291,7 +291,7 @@ export default function AdminDashboard() {
             {/* Online Users */}
             <div className="bg-surface rounded-xl border border-border p-4 flex items-center justify-between shadow-sm">
               <div>
-                <p className="text-[10px] font-bold text-sub uppercase tracking-wider">Đang Trực Tuyến</p>
+                <p className="text-[10px] font-bold text-sub uppercase tracking-wider">Online Now</p>
                 <h4 className="text-xl font-bold text-success font-mono mt-0.5">{onlineCount}</h4>
               </div>
               <div className="p-2.5 bg-success-soft text-success rounded-lg border border-success/20">
@@ -302,7 +302,7 @@ export default function AdminDashboard() {
             {/* Suspended Users */}
             <div className="bg-surface rounded-xl border border-border p-4 flex items-center justify-between shadow-sm">
               <div>
-                <p className="text-[10px] font-bold text-sub uppercase tracking-wider">Tài Khoản Bị Khóa</p>
+                <p className="text-[10px] font-bold text-sub uppercase tracking-wider">Suspended Accounts</p>
                 <h4 className="text-xl font-bold text-danger font-mono mt-0.5">{suspendedCount}</h4>
               </div>
               <div className="p-2.5 bg-danger-soft text-danger rounded-lg border border-danger/20">
@@ -313,7 +313,7 @@ export default function AdminDashboard() {
             {/* Total Projects */}
             <div className="bg-surface rounded-xl border border-border p-4 flex items-center justify-between shadow-sm">
               <div>
-                <p className="text-[10px] font-bold text-sub uppercase tracking-wider">Tổng Số Dự Án</p>
+                <p className="text-[10px] font-bold text-sub uppercase tracking-wider">Total Projects</p>
                 <h4 className="text-xl font-bold text-ink font-mono mt-0.5">{projects.length}</h4>
               </div>
               <div className="p-2.5 bg-accent-soft text-accent rounded-lg border border-accent/20">
@@ -331,8 +331,8 @@ export default function AdminDashboard() {
           {/* Table Toolbar Header */}
           <div className="p-5 border-b border-border flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h3 className="text-sm font-bold text-ink">Danh Sách Tài Khoản Người Dùng</h3>
-              <p className="text-xs text-sub mt-0.5">Hiển thị <span className="font-mono">{filteredUsers.length}</span> tài khoản phù hợp bộ lọc</p>
+              <h3 className="text-sm font-bold text-ink">User Accounts</h3>
+              <p className="text-xs text-sub mt-0.5">Showing <span className="font-mono">{filteredUsers.length}</span> matching accounts</p>
             </div>
 
             <div className="flex items-center gap-3">
@@ -341,7 +341,7 @@ export default function AdminDashboard() {
                 onChange={(e) => setRoleFilter(e.target.value)}
                 className="px-3 py-1.5 bg-bg border border-border rounded-lg text-xs font-semibold text-ink focus:outline-none focus:border-accent"
               >
-                <option value="all">Tất cả vai trò</option>
+                <option value="all">All Roles</option>
                 <option value="SUPER_ADMIN">SUPER_ADMIN</option>
                 <option value="USER_ADMIN">USER_ADMIN</option>
                 <option value="GROUPS_ADMIN">GROUPS_ADMIN</option>
@@ -355,10 +355,10 @@ export default function AdminDashboard() {
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="px-3 py-1.5 bg-bg border border-border rounded-lg text-xs font-semibold text-ink focus:outline-none focus:border-accent"
               >
-                <option value="all">Tất cả trạng thái</option>
-                <option value="online">Trực tuyến (Online)</option>
-                <option value="offline">Ngoại tuyến (Offline)</option>
-                <option value="suspended">Bị khóa (Suspended)</option>
+                <option value="all">All Statuses</option>
+                <option value="online">Online</option>
+                <option value="offline">Offline</option>
+                <option value="suspended">Suspended</option>
               </select>
             </div>
           </div>
@@ -371,24 +371,24 @@ export default function AdminDashboard() {
                   <th className="py-3 px-4 w-10 text-center">
                     <input type="checkbox" className="rounded border-border text-accent focus:ring-accent/40" />
                   </th>
-                  <th className="py-3 px-4">Họ & Tên / Email</th>
-                  <th className="py-3 px-4">Quyền Admin Hệ Thống</th>
-                  <th className="py-3 px-4">Trạng Thái</th>
-                  <th className="py-3 px-4">Ngày Tham Gia</th>
-                  <th className="py-3 px-4 text-right">Thao Tác</th>
+                  <th className="py-3 px-4">Full Name / Email</th>
+                  <th className="py-3 px-4">System Role</th>
+                  <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4">Joined Date</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border text-xs">
                 {loadingData ? (
                   <tr>
                     <td colSpan="6" className="py-12 text-center text-sub">
-                      Đang tải danh sách người dùng...
+                      Loading users...
                     </td>
                   </tr>
                 ) : filteredUsers.length === 0 ? (
                   <tr>
                     <td colSpan="6" className="py-12 text-center text-sub">
-                      Không tìm thấy tài khoản người dùng nào.
+                      No user accounts found.
                     </td>
                   </tr>
                 ) : (
@@ -434,15 +434,15 @@ export default function AdminDashboard() {
                         </td>
                         <td className="py-3.5 px-4">
                           {isSuspended ? (
-                            <Badge variant="danger">Bị Khóa</Badge>
+                            <Badge variant="danger">Suspended</Badge>
                           ) : isUserOnline ? (
-                            <Badge variant="success">Trực Tuyến</Badge>
+                            <Badge variant="success">Online</Badge>
                           ) : (
-                            <Badge variant="neutral">Ngoại Tuyến</Badge>
+                            <Badge variant="neutral">Offline</Badge>
                           )}
                         </td>
                         <td className="py-3.5 px-4 text-sub font-mono">
-                          {u.createdAt ? new Date(u.createdAt).toLocaleDateString('vi-VN') : 'Mới tạo'}
+                          {u.createdAt ? new Date(u.createdAt).toLocaleDateString('en-US') : 'New'}
                         </td>
                         <td className="py-3.5 px-4 text-right">
                           <div className="flex items-center justify-end gap-2">
@@ -452,7 +452,7 @@ export default function AdminDashboard() {
                               icon={isSuspended ? Unlock : Lock}
                               onClick={() => handleToggleStatus(u)}
                             >
-                              {isSuspended ? 'Mở Khóa' : 'Khóa'}
+                              {isSuspended ? 'Unlock' : 'Suspend'}
                             </Button>
                             <Button
                               variant="ghost"

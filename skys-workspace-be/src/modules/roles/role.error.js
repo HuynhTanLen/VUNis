@@ -6,19 +6,19 @@ const { AppError } = require('../../shared/errors/AppError');
 
 class RoleNotFoundError extends AppError {
     constructor() {
-        super('Vai trò không tồn tại trên hệ thống', 404, 'ROLE_NOT_FOUND');
+        super('Role not found in the system', 404, 'ROLE_NOT_FOUND');
     }
 }
 
 class SystemRoleProtectedError extends AppError {
     constructor() {
-        super('Không thể chỉnh sửa hoặc xóa Vai trò mặc định của Hệ thống', 403, 'SYSTEM_ROLE_PROTECTED');
+        super('Cannot edit or delete a protected System Role', 403, 'SYSTEM_ROLE_PROTECTED');
     }
 }
 
 class RoleCodeExistsError extends AppError {
     constructor() {
-        super('Mã Vai trò này đã tồn tại trên hệ thống', 409, 'ROLE_CODE_EXISTS');
+        super('This Role code already exists in the system', 409, 'ROLE_CODE_EXISTS');
     }
 }
 

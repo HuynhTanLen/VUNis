@@ -83,7 +83,7 @@ export default function NotificationPopover({ onProjectApproved }) {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="relative p-2 rounded-lg bg-surface border border-border text-ink hover:bg-accent-soft transition-colors focus:outline-none focus:ring-2 focus:ring-accent/30 shrink-0"
-        title="Thông báo hệ thống"
+        title="System Notifications"
       >
         <Bell className="w-4 h-4 text-accent" />
         {unreadCount > 0 && (
@@ -101,10 +101,10 @@ export default function NotificationPopover({ onProjectApproved }) {
           <div className="p-3.5 border-b border-border flex items-center justify-between bg-bg">
             <div className="flex items-center gap-2">
               <Bell className="w-4 h-4 text-accent" />
-              <h3 className="text-xs font-bold text-ink uppercase tracking-wider">Thông báo hệ thống</h3>
+              <h3 className="text-xs font-bold text-ink uppercase tracking-wider">System Notifications</h3>
               {unreadCount > 0 && (
                 <span className="px-1.5 py-0.5 rounded text-[10px] font-bold font-mono bg-accent-soft text-accent border border-accent/20">
-                  {unreadCount} chưa đọc
+                  {unreadCount} unread
                 </span>
               )}
             </div>
@@ -114,7 +114,7 @@ export default function NotificationPopover({ onProjectApproved }) {
                 onClick={handleMarkAllRead}
                 className="text-[10px] font-semibold text-accent hover:underline flex items-center gap-1 transition-colors"
               >
-                <CheckCheck className="w-3 h-3" /> Đánh dấu tất cả đã đọc
+                <CheckCheck className="w-3 h-3" /> Mark all as read
               </button>
             )}
           </div>
@@ -124,12 +124,12 @@ export default function NotificationPopover({ onProjectApproved }) {
             {notifications.length === 0 ? (
               <div className="p-8 text-center text-sub space-y-1">
                 <CheckCircle2 className="w-6 h-6 text-sub/50 mx-auto" />
-                <p className="text-xs font-semibold text-ink">Không có thông báo mới</p>
-                <p className="text-[11px]">Bạn đã cập nhật tất cả thông tin dự án.</p>
+                <p className="text-xs font-semibold text-ink">No new notifications</p>
+                <p className="text-[11px]">You're all caught up with project updates.</p>
               </div>
             ) : (
               notifications.map((notif) => {
-                const isInvite = notif.title?.toLowerCase().includes('lời mời') || notif.title?.toLowerCase().includes('dự án') || notif.message?.toLowerCase().includes('dự án');
+                const isInvite = notif.title?.toLowerCase().includes('invitation') || notif.title?.toLowerCase().includes('project') || notif.message?.toLowerCase().includes('project');
                 const id = notif.id || notif._id;
 
                 return (
@@ -150,7 +150,7 @@ export default function NotificationPopover({ onProjectApproved }) {
                           <p className="text-xs font-bold text-ink leading-snug truncate">{notif.title}</p>
                           <p className="text-xs text-sub leading-relaxed mt-0.5">{notif.message}</p>
                           <span className="text-[9px] text-sub/70 font-mono mt-1 block">
-                            {notif.createdAt ? new Date(notif.createdAt).toLocaleDateString('vi-VN') : ''}
+                            {notif.createdAt ? new Date(notif.createdAt).toLocaleDateString('en-US') : ''}
                           </span>
                         </div>
                       </div>
@@ -159,7 +159,7 @@ export default function NotificationPopover({ onProjectApproved }) {
                         <button
                           onClick={() => handleMarkAsRead(id)}
                           className="text-sub hover:text-ink p-1 rounded transition-colors shrink-0"
-                          title="Đánh dấu đã đọc"
+                          title="Mark as read"
                         >
                           <Check className="w-3.5 h-3.5" />
                         </button>
@@ -171,7 +171,7 @@ export default function NotificationPopover({ onProjectApproved }) {
                       <div className="flex items-center gap-2 pt-1 border-t border-border/60 justify-end">
                         {notif.isApproved ? (
                           <span className="text-[10px] font-bold text-success flex items-center gap-1">
-                            <CheckCircle2 className="w-3 h-3" /> Đã chấp nhận gia nhập
+                            <CheckCircle2 className="w-3 h-3" /> Accepted Invitation
                           </span>
                         ) : (
                           <>
@@ -179,13 +179,13 @@ export default function NotificationPopover({ onProjectApproved }) {
                               onClick={() => handleDeclineInvitation(notif)}
                               className="px-2.5 py-1 text-[10px] font-semibold text-sub border border-border rounded-md hover:bg-bg transition-colors"
                             >
-                              Từ chối
+                              Decline
                             </button>
                             <button
                               onClick={() => handleApproveInvitation(notif)}
                               className="px-2.5 py-1 text-[10px] font-bold text-white bg-accent rounded-md hover:bg-accent/90 transition-colors shadow-sm"
                             >
-                              Chấp nhận (Approve)
+                              Approve
                             </button>
                           </>
                         )}

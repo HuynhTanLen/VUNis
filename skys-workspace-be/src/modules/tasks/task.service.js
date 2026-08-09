@@ -57,6 +57,7 @@ const create = async (dto, userId) => {
 
     const taskData = {
         title: dto.title,
+        description: dto.description,
         status: dto.status,
         priority: dto.priority || 'medium',
         subtasks: dto.subtasks || [],
@@ -67,7 +68,8 @@ const create = async (dto, userId) => {
         startDate: finalStartDate,
         endDate: finalEndDate,
         estimatedCost: dto.estimatedCost,
-        actualCost: dto.actualCost
+        actualCost: dto.actualCost,
+        phaseId: dto.phaseId
     };
     const newTask = await taskRepo.createTask(taskData);
 
@@ -105,8 +107,8 @@ const update = async (taskId, dto) => {
 
     const updateData = {};
     const allowedFields = [
-        'title', 'status', 'priority', 'subtasks', 'role', 'sprintId', 'assigneeId',
-        'startDate', 'endDate', 'estimatedCost', 'actualCost'
+        'title', 'description', 'status', 'priority', 'subtasks', 'role', 'sprintId', 'assigneeId',
+        'startDate', 'endDate', 'estimatedCost', 'actualCost', 'phaseId'
     ];
     allowedFields.forEach(field => {
         if (dto[field] !== undefined) {

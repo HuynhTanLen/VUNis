@@ -15,12 +15,12 @@ export default function ProfilePage() {
                     <div className="w-12 h-12 bg-accent-soft rounded-full flex items-center justify-center mx-auto border border-accent/20">
                         <User className="w-6 h-6 text-accent" />
                     </div>
-                    <p className="text-ink text-xs font-semibold uppercase tracking-wider">Bạn chưa đăng nhập</p>
+                    <p className="text-ink text-xs font-semibold uppercase tracking-wider">You are not logged in</p>
                     <Link 
                         href="/" 
                         className="btn-primary block w-full text-center"
                     >
-                        Về trang chủ
+                        Back to Home
                     </Link>
                 </div>
             </div>
@@ -40,7 +40,7 @@ export default function ProfilePage() {
                         className="btn-secondary inline-flex items-center gap-2"
                     >
                         <ChevronLeft className="w-4 h-4 text-sub" />
-                        <span>Quay lại trang chính</span>
+                        <span>Back to Dashboard</span>
                     </Link>
                 </div>
 
@@ -55,7 +55,7 @@ export default function ProfilePage() {
                                     <h1 className="text-base font-semibold text-ink leading-tight">{user.name}</h1>
                                     <div className="flex items-center gap-2 mt-1">
                                         <Badge variant={isAdmin ? 'warning' : 'accent'} icon={Shield}>
-                                            {user.role?.displayName || 'Thành viên'}
+                                            {user.role?.displayName || 'Member'}
                                         </Badge>
                                     </div>
                                 </div>
@@ -66,7 +66,7 @@ export default function ProfilePage() {
                                 className="btn-danger flex items-center justify-center gap-1.5 w-full sm:w-auto"
                             >
                                 <LogOut className="w-3.5 h-3.5" />
-                                Đăng xuất
+                                Logout
                             </button>
                         </div>
 
@@ -76,7 +76,7 @@ export default function ProfilePage() {
                                     <Mail className="w-4 h-4 text-accent" />
                                 </div>
                                 <div className="min-w-0">
-                                    <p className="label-field">Địa chỉ Email</p>
+                                    <p className="label-field">Email Address</p>
                                     <p className="font-semibold text-xs text-ink truncate mt-0.5">{user.email}</p>
                                 </div>
                             </div>
@@ -86,8 +86,8 @@ export default function ProfilePage() {
                                     <User className="w-4 h-4 text-accent" />
                                 </div>
                                 <div className="min-w-0">
-                                    <p className="label-field">Số điện thoại</p>
-                                    <p className="font-semibold text-xs text-ink font-mono truncate mt-0.5">{user.phone || 'Chưa cập nhật'}</p>
+                                    <p className="label-field">Phone Number</p>
+                                    <p className="font-semibold text-xs text-ink font-mono truncate mt-0.5">{user.phone || 'Not updated'}</p>
                                 </div>
                             </div>
 
@@ -96,7 +96,7 @@ export default function ProfilePage() {
                                     <Briefcase className="w-4 h-4 text-accent" />
                                 </div>
                                 <div className="min-w-0">
-                                    <p className="label-field">Chức danh / Vị trí</p>
+                                    <p className="label-field">Job Title / Role</p>
                                     <p className="font-semibold text-xs text-ink truncate mt-0.5">{user.jobTitle || 'Software Engineer'}</p>
                                 </div>
                             </div>
@@ -106,7 +106,7 @@ export default function ProfilePage() {
                                     <Shield className="w-4 h-4 text-accent" />
                                 </div>
                                 <div className="min-w-0">
-                                    <p className="label-field">Phòng ban & Công ty</p>
+                                    <p className="label-field">Department & Company</p>
                                     <p className="font-semibold text-xs text-ink truncate mt-0.5">
                                         {user.department || 'Engineering'} • {user.company || 'KS Organization'}
                                     </p>
@@ -119,9 +119,9 @@ export default function ProfilePage() {
                                 <Lock className="w-4 h-4 text-warning" />
                             </div>
                             <div>
-                                <h4 className="text-xs font-semibold text-warning uppercase tracking-wider">Bảo mật tài khoản</h4>
+                                <h4 className="text-xs font-semibold text-warning uppercase tracking-wider">Account Security</h4>
                                 <p className="text-xs text-warning/90 font-normal leading-relaxed mt-1">
-                                    Mật khẩu của bạn đã được mã hóa an toàn trên máy chủ. Nếu có nhu cầu thay đổi mật khẩu hoặc xóa tài khoản, vui lòng gửi yêu cầu hỗ trợ trực tiếp đến Ban Quản Trị Skys.
+                                    Your password is securely encrypted on the server. If you need to change your password or delete your account, please send a support request directly to the VUNIS Administration.
                                 </p>
                             </div>
                         </div>

@@ -23,31 +23,31 @@ class AppError extends Error {
 }
 
 class NotFoundError extends AppError {
-    constructor(resource = 'Tài nguyên') {
-        super(`${resource} không tồn tại`, 404, 'NOT_FOUND');
+    constructor(resource = 'Resource') {
+        super(`${resource} not found`, 404, 'NOT_FOUND');
     }
 }
 
 class UnauthorizedError extends AppError {
-    constructor(message = 'Không có quyền truy cập') {
+    constructor(message = 'Unauthorized access') {
         super(message, 401, 'UNAUTHORIZED');
     }
 }
 
 class ForbiddenError extends AppError {
-    constructor(message = 'Không đủ quyền hạn') {
+    constructor(message = 'Forbidden access') {
         super(message, 403, 'FORBIDDEN');
     }
 }
 
 class ValidationError extends AppError {
-    constructor(message = 'Dữ liệu không hợp lệ') {
+    constructor(message = 'Invalid data') {
         super(message, 400, 'VALIDATION_ERROR');
     }
 }
 
 class ConflictError extends AppError {
-    constructor(message = 'Dữ liệu bị trùng lặp') {
+    constructor(message = 'Data conflict or already exists') {
         super(message, 409, 'CONFLICT');
     }
 }

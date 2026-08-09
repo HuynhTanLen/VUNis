@@ -16,7 +16,7 @@ export default function Login({ onSwitchToRegister, onSwitchToForgotPassword }) 
     try {
       await login(email.trim(), password);
     } catch (err) {
-      setError(err.response?.data?.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.');
+      setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
     } finally {
       setLoading(false);
     }
@@ -28,10 +28,10 @@ export default function Login({ onSwitchToRegister, onSwitchToForgotPassword }) 
         
         <div className="flex flex-col items-center space-y-2 text-center">
           <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center text-white font-semibold text-base">
-            S
+            VU
           </div>
-          <h2 className="text-lg font-semibold text-ink mt-1">Đăng nhập Skys Platform</h2>
-          <p className="text-xs text-sub">Chào mừng quay trở lại không gian làm việc của bạn.</p>
+          <h2 className="text-lg font-semibold text-ink mt-1">Sign in to VUNIS</h2>
+          <p className="text-xs text-sub">Welcome back to your workspace.</p>
         </div>
 
         <div className="card-clean p-6 space-y-4">
@@ -43,7 +43,7 @@ export default function Login({ onSwitchToRegister, onSwitchToForgotPassword }) 
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-1">
-              <label className="label-field">Email truy cập</label>
+              <label className="label-field">Email address</label>
               <div className="relative">
                 <input 
                   type="email" 
@@ -60,13 +60,13 @@ export default function Login({ onSwitchToRegister, onSwitchToForgotPassword }) 
             
             <div className="space-y-1">
               <div className="flex justify-between items-center">
-                <label className="label-field">Mật khẩu</label>
+                <label className="label-field">Password</label>
                 <button
                   type="button"
                   onClick={onSwitchToForgotPassword}
                   className="text-xs text-accent hover:text-accent/80 font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-accent/20 rounded"
                 >
-                  Quên mật khẩu?
+                  Forgot password?
                 </button>
               </div>
               <div className="relative">
@@ -91,23 +91,23 @@ export default function Login({ onSwitchToRegister, onSwitchToForgotPassword }) 
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Đang đăng nhập...
+                  Signing in...
                 </>
               ) : (
-                'Đăng nhập'
+                'Sign in'
               )}
             </button>
           </form>
         </div>
 
         <p className="text-center text-sub text-xs">
-          Chưa có tài khoản?{' '}
+          Don't have an account?{' '}
           <button 
             onClick={onSwitchToRegister} 
             disabled={loading}
             className="text-accent hover:text-accent/80 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-accent/20 rounded"
           >
-            Đăng ký ngay
+            Sign up now
           </button>
         </p>
       </div>

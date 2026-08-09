@@ -237,6 +237,26 @@ const getById = async (projectId) => {
     return projectMapper.toProjectResponse(project);
 };
 
+const getProjectTotalCost = async (projectId) => {
+    // Tổng chi phí thực từ TaskAssignment (lương đã tính)
+    const assignmentResult = await prisma.taskAssignment.aggregate({
+        where: { task: { projectId } },
+        _sum: { cost: true }
+    });
+
+    // Tổng estimatedCost và actualCost từ các Task
+    const taskResult = await prisma.task.aggregate({
+        where: { projectId },
+        _sum: { estimatedCost: true, actualCost: true }
+    });
+
+    return {
+        totalActualCost: assignmentResult._sum.cost ? Number(assignmentResult._sum.cost) : 0,
+        totalEstimatedCost: taskResult._sum.estimatedCost ? Number(taskResult._sum.estimatedCost) : 0,
+        totalActualTaskCost: taskResult._sum.actualCost ? Number(taskResult._sum.actualCost) : 0
+    };
+};
+
 
 
 module.exports = { 
@@ -250,6 +270,6 @@ module.exports = {
     getMembers,
     getRootProjects,
     getSubProjects,
-    getById
+    getById,
+    getProjectTotalCost
 };
-

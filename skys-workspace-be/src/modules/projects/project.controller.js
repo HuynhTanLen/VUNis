@@ -69,6 +69,11 @@ const getProjectMembers = asyncHandler(async (req, res) => {
     res.status(200).json(members);
 });
 
+const getProjectCost = asyncHandler(async (req, res) => {
+    const cost = await projectService.getProjectTotalCost(req.params.id);
+    res.status(200).json(cost);
+});
+
 module.exports = {
     getProjects,
     getRootProjects,
@@ -80,6 +85,6 @@ module.exports = {
     deleteProjectAdmin,
     addProjectMember,
     getProjectMembers,
-    getProjectById
+    getProjectById,
+    getProjectCost
 };
-

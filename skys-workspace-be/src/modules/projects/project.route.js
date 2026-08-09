@@ -16,7 +16,8 @@ const {
     deleteProjectAdmin,
     addProjectMember,
     getProjectMembers,
-    getProjectById
+    getProjectById,
+    getProjectCost
 } = require('./project.controller');
 const { protect } = require('../../middleware/auth.middleware');
 const { authorize, checkProjectPermission } = require('../../middleware/rbac.middleware');
@@ -43,6 +44,9 @@ router.route('/:id')
     .get(checkProjectPermission(), getProjectById)
     .put(checkProjectPermission('PROJECT_MANAGER'), updateProject)
     .delete(checkProjectPermission('PROJECT_MANAGER'), deleteProject);
+
+// Route lấy tổng chi phí dự án từ TaskAssignment
+router.get('/:id/cost', checkProjectPermission(), getProjectCost);
 
 const ganttRoute = require('../gantt/gantt.route');
 router.use('/:projectId/gantt', ganttRoute);
