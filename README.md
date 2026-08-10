@@ -16,7 +16,7 @@
 
 ##  GIỚI THIỆU DỰ ÁN
 
-**Skys Platform** là hệ thống quản lý công việc và dự án theo phương pháp Agile/Scrum doanh nghiệp (tương tự Jira, ClickUp và Monday.com). Hệ thống hỗ trợ lập kế hoạch Sprint, vẽ sơ đồ PERT/Gantt Chart, phân cấp cây dự án con, bình luận lồng nhau và theo dõi trạng thái người dùng theo thời gian thực.
+**VUNIS** là hệ thống quản lý công việc và dự án theo phương pháp Agile/Scrum doanh nghiệp (tương tự Jira, ClickUp và Monday.com). Hệ thống hỗ trợ lập kế hoạch Sprint, vẽ sơ đồ PERT/Gantt Chart, phân cấp cây dự án con, bình luận lồng nhau và theo dõi trạng thái người dùng theo thời gian thực.
 
 ---
 
@@ -60,13 +60,13 @@ Hệ thống phân định 5 cấp độ Admin chuyên biệt + 1 User thông th
 
 ##  CÔNG NGHỆ SỬ DỤNG (TECH STACK)
 
-### Backend Services (`skys-workspace-be`):
+### Backend Services (`vunis-be`):
 * **Core**: Node.js, Express.js
 * **Database**: MongoDB Atlas, Mongoose ODM
 * **Security & Auth**: JWT (HttpOnly Cookie & Bearer Header), bcrypt.js, Rate Limiting (express-rate-limit), CORS, Cookie-Parser
 * **Architecture**: Strict 6-Layer Modular Architecture
 
-### Frontend Application (`skys-workspace-fe`):
+### Frontend Application (`vunis-fe`):
 * **Framework**: Next.js / React.js
 * **Styling**: Vanilla CSS, TailwindCSS
 
@@ -142,7 +142,7 @@ src/modules/<module-name>/
 ### 2. Khởi động Backend Server
 ```bash
 # Di chuyển vào thư mục Backend
-cd skys-workspace-be
+cd vunis-be
 
 # Cài đặt dependencies
 npm install
@@ -155,7 +155,7 @@ Server Backend sẽ lắng nghe tại: `http://localhost:5000`
 ### 3. Khởi động Frontend App
 ```bash
 # Di chuyển vào thư mục Frontend
-cd skys-workspace-fe
+cd vunis-fe
 
 # Cài đặt dependencies
 npm install
@@ -174,5 +174,5 @@ Tài khoản Admin tối cao được khởi tạo tự động an toàn thông 
 ---
 
 ###  LICENSE & AUTHOR
-* **Dự án**: Skys Platform System
-* **Bản quyền**: © 2026 Skys Platform Team. All rights reserved.
+* **Dự án**: VUNIS System
+* **Bản quyền**: © 2026 VUNIS Team. All rights reserved.
