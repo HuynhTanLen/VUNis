@@ -38,9 +38,9 @@ const sendEmail = async (options) => {
     // In đường link xem thử Email ra Terminal nếu đang ở chế độ xem thử Ethereal
     if (!isRealEmailConfigured) {
         console.log(`\n==================================================`);
-        console.log(`📧 [EMAIL THÔNG BÁO XEM THỬ KHI CHƯA CÓ GMAIL THẬT]:`);
-        console.log(`🔗 Bấm giữ Ctrl và Click vào link để xem mail:`);
-        console.log(`👉 ${nodemailer.getTestMessageUrl(info)}`);
+        console.log(`[EMAIL THÔNG BÁO XEM THỬ KHI CHƯA CÓ GMAIL THẬT]:`);
+        console.log(`Bấm giữ Ctrl và Click vào link để xem mail:`);
+        console.log(`${nodemailer.getTestMessageUrl(info)}`);
         console.log(`==================================================\n`);
     }
 };

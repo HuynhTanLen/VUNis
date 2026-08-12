@@ -120,7 +120,7 @@ const seedRolesAndPermissions = async () => {
             });
         }
 
-        console.log('✅ Đã khởi tạo thành công dữ liệu mặc định cho Permissions và Roles!');
+        console.log('Đã khởi tạo thành công dữ liệu mặc định cho Permissions và Roles!');
     } catch (err) {
         console.error('Lỗi khi seed Permissions & Roles:', err.message);
     }

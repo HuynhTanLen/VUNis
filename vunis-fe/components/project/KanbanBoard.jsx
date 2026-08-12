@@ -648,7 +648,7 @@ export default function KanbanBoard({ projectId, project }) {
           </select>
         </div>
 
-        <div className="flex items-center gap-2 text-[10px] font-bold overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
+        <div className="flex items-center gap-2 text-xs font-bold overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
           {COLUMNS.map(col => (
             <div key={col.id} className={`px-2 py-0.5 rounded-md font-mono ${col.badgeBg}`}>
               {tasks.filter(t => t.status === col.id).length} {col.label}
@@ -705,14 +705,14 @@ export default function KanbanBoard({ projectId, project }) {
               <div key={col.id} className={`min-w-[280px] w-[80vw] md:w-auto md:min-w-0 snap-center bg-bg/60 rounded-lg min-h-[500px] flex flex-col flex-shrink-0 md:flex-shrink`}>
                 <div className="px-3 py-3 flex items-center justify-between shrink-0">
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-sub text-[11px] uppercase tracking-wider">{col.label}</span>
-                    <span className="text-[11px] font-semibold text-sub bg-border/40 px-1.5 rounded">{colTasks.length}</span>
+                    <span className="font-bold text-sub text-sm uppercase tracking-wider">{col.label}</span>
+                    <span className="text-sm font-semibold text-sub bg-border/40 px-1.5 rounded">{colTasks.length}</span>
                   </div>
                 </div>
 
                 <div className="p-2 space-y-2.5 flex-1 overflow-y-auto max-h-[calc(100vh-280px)] min-h-[150px]">
                   {colTasks.length === 0 ? (
-                    <div className="h-28 border border-dashed border-border rounded-lg flex items-center justify-center text-sub text-xs font-semibold">
+                    <div className="h-28 border border-dashed border-border rounded-lg flex items-center justify-center text-sub text-sm font-semibold">
                       No tasks
                     </div>
                   ) : (

@@ -4,6 +4,7 @@
  * File này CHỈ làm 2 việc: kết nối DB và khởi động HTTP server.
  * Mọi cấu hình khác nằm trong thư mục src/.
  */
+require('dotenv').config();
 const app = require('./src/app');
 const env = require('./src/config/env');
 const connectDatabase = require('./src/config/database');

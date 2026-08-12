@@ -50,9 +50,9 @@ export default function Workspace({ project, onBackToProjects }) {
             <div className="min-w-0 space-y-1.5">
               <div className="flex items-center gap-2">
                 <div className="w-6 h-6 rounded bg-accent text-white flex items-center justify-center text-[10px] font-bold">PROJ</div>
-                <h1 className="text-xl font-semibold text-ink tracking-tight truncate leading-tight">{project.name}</h1>
+                <h1 className="text-2xl font-semibold text-ink tracking-tight truncate leading-tight">{project.name}</h1>
               </div>
-              <p className="text-sm text-sub font-normal line-clamp-2 leading-relaxed">
+              <p className="text-base text-sub font-normal line-clamp-2 leading-relaxed">
                 {project.description || 'No objective or scope provided for this project.'}
               </p>
             </div>

@@ -115,6 +115,8 @@ const create = async (dto, userId) => {
                 }
             })
         }
+
+        else if(proj.modelType === 'V_MODEL')
         return proj;
     });
 
