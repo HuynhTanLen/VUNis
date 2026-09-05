@@ -25,6 +25,7 @@ const labelRoutes = require('./modules/labels/label.route');
 const projectMemberRoutes = require('./modules/projectMembers/projectMember.route');
 const roleRoutes = require('./modules/roles/role.route');
 const permissionRoutes = require('./modules/permissions/permission.route');
+const projectPhaseRoutes = require('./modules/projectPhases/projectPhase.route');
 
 const app = express();
 
@@ -56,6 +57,7 @@ app.use('/api/labels', labelRoutes);
 app.use('/api/project-members', projectMemberRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/permissions', permissionRoutes);
+app.use('/api/project-phases', projectPhaseRoutes);
 
 
 // ─── Health & System Stats ─────────────────────────

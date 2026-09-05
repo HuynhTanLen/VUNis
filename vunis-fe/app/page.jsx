@@ -42,7 +42,7 @@ function SidebarContent({ user, selectedProject, sidebarProjects, showProjectLis
           <span>My Profile</span>
         </Link>
 
-        {['SUPER_ADMIN', 'USER_ADMIN', 'admin', 'super_admin'].includes(user.role?.name || user.role || '') && (
+        {['SUPER_ADMIN', 'USER_ADMIN', 'GROUPS_ADMIN', 'SERVICE_ADMIN', 'HELP_DESK_ADMIN'].includes(user.role || '') && (
           <Link
             href="/admin"
             onClick={onCloseSidebar}
@@ -96,7 +96,7 @@ function SidebarContent({ user, selectedProject, sidebarProjects, showProjectLis
 
       <footer className="p-3 border-t border-border space-y-2 shrink-0 bg-surface">
         <div className="flex items-center gap-2.5 p-2 bg-bg border border-border rounded-lg">
-          <div className="w-10 h-10 rounded-lg bg-accent text-white font-bold text-sm flex items-center justify-center shrink-0 shadow-sm">
+          <div className="w-10 h-10 rounded-lg bg-accent text-white font-bold text-sm flex items-center justify-center shrink-0">
             {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
           </div>
           <div className="truncate min-w-0 flex-1">
@@ -190,7 +190,7 @@ export default function Home() {
       {/* ====== DESKTOP SIDEBAR: always takes space in flex row, not fixed ====== */}
       <aside className="hidden md:flex md:flex-col md:w-72 md:shrink-0 bg-surface border-r border-border overflow-hidden">
         <header className="p-4 flex items-center gap-3 border-b border-border shrink-0">
-          <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center text-white font-extrabold text-sm shadow-sm">VU</div>
+          <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center text-white font-extrabold text-sm">VU</div>
           <div>
             <h1 className="text-ink font-bold text-sm leading-none">VUNIS</h1>
             <span className="text-xs text-sub font-medium uppercase tracking-wider mt-1 block">Enterprise Workspace</span>
@@ -208,7 +208,7 @@ export default function Home() {
           <aside className="fixed inset-y-0 left-0 z-50 w-72 bg-surface border-r border-border flex flex-col shadow-2xl md:hidden">
             <header className="p-4 flex items-center justify-between border-b border-border shrink-0">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center text-white font-extrabold text-sm shadow-sm">VU</div>
+                <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center text-white font-extrabold text-sm">VU</div>
                 <div>
                   <h1 className="text-ink font-bold text-sm leading-none">VUNIS</h1>
                   <span className="text-xs text-sub font-medium uppercase tracking-wider mt-1 block">Enterprise Workspace</span>

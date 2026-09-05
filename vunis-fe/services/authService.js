@@ -15,6 +15,11 @@ export const getMe = async () => {
     return response.data;
 }
 
+export const updateProfile = async (userId, profileData) => {
+    const response = await api.put(`/users/${userId}`, profileData);
+    return response.data;
+}
+
 export const getAllUsers = async () => {
     const response = await api.get('/users');
     return response.data;
@@ -48,11 +53,6 @@ export const resetPassword = async (email, token, newPassword) => {
 
 export const logoutUser = async () => {
     const response = await api.post('/auth/logout');
-    return response.data;
-}
-
-export const getRoles = async () => {
-    const response = await api.get('/auth/roles');
     return response.data;
 }
 

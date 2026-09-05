@@ -11,8 +11,8 @@ export default function Button({
   ...props
 }) {
   const variants = {
-    primary: 'bg-accent hover:bg-accent/90 text-white shadow-sm focus:ring-accent/40',
-    secondary: 'bg-surface hover:bg-black/[0.02] text-ink border border-border shadow-sm focus:ring-accent/20',
+    primary: 'bg-accent hover:bg-accent/90 text-white focus:ring-accent/40',
+    secondary: 'bg-surface hover:bg-black/[0.02] text-ink border border-border focus:ring-accent/20',
     ghost: 'text-sub hover:text-ink hover:bg-accent-soft focus:ring-accent/20',
     danger: 'border border-danger/30 text-danger hover:bg-danger-soft focus:ring-danger/20'
   };

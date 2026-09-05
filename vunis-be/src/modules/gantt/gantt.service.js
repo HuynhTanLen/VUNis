@@ -37,31 +37,28 @@ const getGanttProject = async (projectId) => {
             orderBy: { order: 'asc' }
         })
 
-        // Tổng số ngày dự án để tính %
-        const totalProjectDays = project.durationWeeks * 7
-
         const tree = phases.map(phase => {
-            const phaseDays = phase.startDate && phase.endDate
-                ? Math.max(1, Math.round((new Date(phase.endDate) - new Date(phase.startDate)) / (1000 * 60 * 60 * 24)))
-                : 0
-
-            const phasePct = totalProjectDays > 0 ? Math.round((phaseDays / totalProjectDays) * 100) : 0
-
             // Tasks thuộc phase này (dựa vào phaseId)
-            const phaseTasks = tasks
-                .filter(task => task.phaseId === phase.id)
-                .map(task => ({
-                    id: task.id,
-                    name: task.title,
-                    type: 'TASK',
-                    status: task.status,
-                    priority: task.priority,
-                    startDate: task.createdAt,
-                    endDate: task.dueDate,
-                    estimatedCost: task.estimatedCost ? Number(task.estimatedCost) : 0,
-                    actualCost: task.actualCost ? Number(task.actualCost) : 0,
-                    assignee: task.assignee || null
-                }))
+            const phaseTasksRaw = tasks.filter(task => task.phaseId === phase.id)
+
+            // % hiển thị trên thanh Gantt phải phản ánh tiến độ thực tế (task đã DONE / tổng số task
+            // của giai đoạn) — KHÔNG phải tỷ lệ thời lượng giai đoạn chiếm trong tổng thời gian dự án
+            // (con số đó cố định ngay từ lúc tạo phase, không đổi dù task có xong hay chưa).
+            const doneCount = phaseTasksRaw.filter(t => t.status === 'DONE' || t.status === 'Done').length
+            const phasePct = phaseTasksRaw.length > 0 ? Math.round((doneCount / phaseTasksRaw.length) * 100) : 0
+
+            const phaseTasks = phaseTasksRaw.map(task => ({
+                id: task.id,
+                name: task.title,
+                type: 'TASK',
+                status: task.status,
+                priority: task.priority,
+                startDate: task.createdAt,
+                endDate: task.dueDate,
+                estimatedCost: task.estimatedCost ? Number(task.estimatedCost) : 0,
+                actualCost: task.actualCost ? Number(task.actualCost) : 0,
+                assignee: task.assignee || null
+            }))
 
             return {
                 id: phase.id,

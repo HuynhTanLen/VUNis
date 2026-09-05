@@ -111,7 +111,7 @@ function PhaseRow({ phase, colorClass, days, isPM, expandedPhases, togglePhase }
               ))}
             </div>
             <div
-              className={`absolute top-0 bottom-0 ${colorClass} rounded flex items-center justify-end pr-1.5 transition-all duration-500 shadow-sm`}
+              className={`absolute top-0 bottom-0 ${colorClass} rounded flex items-center justify-end pr-1.5 transition-all duration-500`}
               style={barStyle}
             >
               {phase.phasePct > 0 && (
@@ -161,7 +161,7 @@ function PhaseRow({ phase, colorClass, days, isPM, expandedPhases, togglePhase }
                   ))}
                 </div>
                 <div
-                  className={`absolute top-0 bottom-0 ${sc.bar} rounded-r flex items-center px-2 transition-all duration-500 shadow-sm`}
+                  className={`absolute top-0 bottom-0 ${sc.bar} rounded-r flex items-center px-2 transition-all duration-500`}
                   style={taskBar}
                 >
                   <span className="text-[9px] font-semibold text-white whitespace-nowrap z-10">{sc.label}</span>
@@ -212,7 +212,7 @@ function OrphanTaskRow({ task, days, isPM }) {
             ))}
           </div>
           <div
-            className={`absolute top-0 bottom-0 ${sc.bar} rounded-r flex items-center px-2 transition-all duration-500 shadow-sm`}
+            className={`absolute top-0 bottom-0 ${sc.bar} rounded-r flex items-center px-2 transition-all duration-500`}
             style={taskBar}
           >
             <span className="text-[9px] font-semibold text-white whitespace-nowrap z-10">{sc.label}</span>

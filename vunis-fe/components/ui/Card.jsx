@@ -7,7 +7,7 @@ export default function Card({
 }) {
   return (
     <div
-      className={`bg-surface rounded-xl border border-border p-5 shadow-sm transition-colors duration-150 ${className}`}
+      className={`bg-surface rounded-xl border border-border p-5 transition-colors duration-150 ${className}`}
       {...props}
     >
       {children}

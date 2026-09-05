@@ -5,18 +5,18 @@ import { Users, Mail, Plus, Shield, Check, AlertCircle, Loader2, Trash2, UserChe
 import { useAuth } from '../../hooks/useAuth';
 
 const AVAILABLE_ROLES = [
-  { value: 'PROJECT_MANAGER', label: '👑 Project Manager' },
-  { value: 'FRONTEND_LEAD', label: '🎨 Frontend Lead' },
-  { value: 'FRONTEND_DEVELOPER', label: '💻 Frontend Dev' },
-  { value: 'BACKEND_LEAD', label: '⚙️ Backend Lead' },
-  { value: 'BACKEND_DEVELOPER', label: '🛠️ Backend Dev' },
-  { value: 'BUSINESS_ANALYST', label: '📊 Business Analyst (BA)' },
-  { value: 'DESIGN_LEAD', label: '✨ Design Lead' },
-  { value: 'UI_UX_DESIGNER', label: '🖌️ UI/UX Designer' },
-  { value: 'QA_LEAD', label: '🧪 QA Lead' },
-  { value: 'QA_TESTER', label: '🐞 QA Tester' },
-  { value: 'DEVOPS_LEAD', label: '🚀 DevOps Lead' },
-  { value: 'MEMBER', label: '👤 Member' }
+  { value: 'PROJECT_MANAGER', label: 'Project Manager' },
+  { value: 'FRONTEND_LEAD', label: 'Frontend Lead' },
+  { value: 'FRONTEND_DEVELOPER', label: 'Frontend Developer' },
+  { value: 'BACKEND_LEAD', label: 'Backend Lead' },
+  { value: 'BACKEND_DEVELOPER', label: 'Backend Developer' },
+  { value: 'DESIGN_LEAD', label: 'Design Lead' },
+  { value: 'UI_UX_DESIGNER', label: 'UI/UX Designer' },
+  { value: 'QA_LEAD', label: 'QA Lead' },
+  { value: 'QA_TESTER', label: 'QA Tester' },
+  { value: 'DEVOPS_LEAD', label: 'DevOps Lead' },
+  { value: 'DEVOPS_ENGINEER', label: 'DevOps Engineer' },
+  { value: 'MEMBER', label: 'Member' }
 ];
 
 export default function ProjectMembers({ projectId, project }) {
@@ -39,8 +39,8 @@ export default function ProjectMembers({ projectId, project }) {
   const projectOwnerId = projectOwner?.id || project?.ownerId;
   const isOwner = Boolean(
     user && (
-      (projectOwnerId && (user.id === projectOwnerId || user._id === projectOwnerId)) ||
-      ['SUPER_ADMIN', 'USER_ADMIN', 'admin'].includes(user.role?.name || user.role) ||
+      (projectOwnerId && user.id === projectOwnerId) ||
+      ['SUPER_ADMIN', 'USER_ADMIN'].includes(user.role) ||
       ['PROJECT_MANAGER', 'Owner'].includes(project?.userRole)
     )
   );
@@ -157,7 +157,7 @@ export default function ProjectMembers({ projectId, project }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       {isOwner && (
-        <div className="md:col-span-1 bg-surface rounded-xl border border-border p-5 shadow-sm h-fit space-y-4">
+        <div className="md:col-span-1 bg-surface rounded-xl border border-border p-5 h-fit space-y-4">
           <div>
             <h3 className="font-bold text-ink text-xs uppercase tracking-wider flex items-center gap-1.5 pb-2 border-b border-border">
               <Plus className="w-4 h-4 text-accent" />
@@ -188,7 +188,7 @@ export default function ProjectMembers({ projectId, project }) {
                     {systemUsers
                       .filter(u => u.email && u.email !== user?.email)
                       .map(u => (
-                        <option key={u.id || u._id} value={u.email}>
+                        <option key={u.id} value={u.email}>
                           {u.name} ({u.email})
                         </option>
                       ))
@@ -244,7 +244,7 @@ export default function ProjectMembers({ projectId, project }) {
         </div>
       )}
 
-      <div className={`${isOwner ? 'md:col-span-2' : 'md:col-span-3'} bg-surface rounded-xl border border-border p-5 shadow-sm space-y-4`}>
+      <div className={`${isOwner ? 'md:col-span-2' : 'md:col-span-3'} bg-surface rounded-xl border border-border p-5 space-y-4`}>
         <div className="flex justify-between items-center pb-2.5 border-b border-border">
           <div>
             <h3 className="font-bold text-ink text-xs uppercase tracking-wider flex items-center gap-1.5">
@@ -291,7 +291,7 @@ export default function ProjectMembers({ projectId, project }) {
                         {avatarUrl ? (
                           <img src={avatarUrl} alt={memberName} className="w-7 h-7 rounded-full object-cover border border-border shrink-0" />
                         ) : (
-                          <div className="w-7 h-7 rounded-full bg-accent text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-sm">
+                          <div className="w-7 h-7 rounded-full bg-accent text-white font-bold text-xs flex items-center justify-center shrink-0">
                             {(memberName || 'U').charAt(0).toUpperCase()}
                           </div>
                         )}

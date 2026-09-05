@@ -87,7 +87,7 @@ export default function NotificationPopover({ onProjectApproved }) {
       >
         <Bell className="w-4 h-4 text-accent" />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-danger text-[10px] font-bold text-white font-mono shadow-sm">
+          <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-danger text-[10px] font-bold text-white font-mono">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -183,7 +183,7 @@ export default function NotificationPopover({ onProjectApproved }) {
                             </button>
                             <button
                               onClick={() => handleApproveInvitation(notif)}
-                              className="px-2.5 py-1 text-[10px] font-bold text-white bg-accent rounded-md hover:bg-accent/90 transition-colors shadow-sm"
+                              className="px-2.5 py-1 text-[10px] font-bold text-white bg-accent rounded-md hover:bg-accent/90 transition-colors"
                             >
                               Approve
                             </button>

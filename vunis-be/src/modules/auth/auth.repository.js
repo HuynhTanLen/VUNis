@@ -14,6 +14,11 @@ const USER_SELECT_SAFE = {
     isBlocked: true,
     lastActiveAt: true,
     avatar: true,
+    phone: true,
+    jobTitle: true,
+    department: true,
+    company: true,
+    hourlyRate: true,
     createdAt: true,
     updatedAt: true,
 };

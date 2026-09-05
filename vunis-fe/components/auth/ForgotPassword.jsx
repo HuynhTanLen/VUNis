@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { forgotPassword, resetPassword } from '../../services/authService';
-import { Loader2, Mail, Lock, CheckCircle2, AlertCircle, ChevronLeft } from 'lucide-react';
+import { Loader2, ArrowRight, CheckCircle2, AlertCircle, ChevronLeft } from 'lucide-react';
+import AuthLayout from './AuthLayout';
 
 export default function ForgotPassword({ onSwitchToLogin }) {
   const [step, setStep] = useState(1);
@@ -17,7 +18,7 @@ export default function ForgotPassword({ onSwitchToLogin }) {
     try {
       const data = await forgotPassword(email.trim());
       const devTokenNotice = data.resetToken ? ` (Dev OTP token: ${data.resetToken})` : '';
-      setSuccessMsg(`OTP sent! Please check your email or server console.${devTokenNotice}`);
+      setSuccessMsg(`OTP sent! Please check your email.${devTokenNotice}`);
       setStep(2);
     } catch (err) { setError(err.response?.data?.message || 'Account not found with this email.'); }
     finally { setLoading(false); }
@@ -34,87 +35,69 @@ export default function ForgotPassword({ onSwitchToLogin }) {
   };
 
   return (
-    <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-bg px-4 font-sans text-ink antialiased">
-      <div className="w-full max-w-[360px] space-y-5">
-        <div className="flex flex-col items-center space-y-2 text-center">
-          <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center text-white font-semibold text-base">VU</div>
-          <h2 className="text-lg font-semibold text-ink mt-1">Reset Password</h2>
-          <p className="text-xs text-sub">Set a new password to access your workspace.</p>
+    <AuthLayout
+      eyebrow="Reset password"
+      title="Reset password"
+      subtitle="Set a new password to access your workspace."
+      footer={step !== 3 && (
+        <button onClick={onSwitchToLogin} disabled={loading} className="inline-flex items-center gap-1 text-sub hover:text-ink font-semibold transition-colors focus:outline-none">
+          <ChevronLeft className="w-3.5 h-3.5" />Back to sign in
+        </button>
+      )}
+    >
+      {error && (
+        <div className="text-danger border-l-2 border-danger pl-3 py-1 text-xs font-medium flex items-start gap-2 mb-5">
+          <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" /><span>{error}</span>
         </div>
+      )}
+      {successMsg && step === 2 && (
+        <div className="text-success border-l-2 border-success pl-3 py-1 text-xs font-medium mb-5">{successMsg}</div>
+      )}
 
-        <div className="card-clean p-6 space-y-4">
-          {error && (
-            <div className="bg-danger-soft text-danger border border-danger/20 p-3 rounded-lg text-xs font-medium flex items-start gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" /><span>{error}</span>
-            </div>
-          )}
-          {successMsg && step === 2 && (
-            <div className="bg-success-soft text-success border border-success/20 p-3 rounded-lg text-xs font-medium">{successMsg}</div>
-          )}
-
-          {step === 1 && (
-            <form onSubmit={handleSendOtp} className="space-y-4">
-              <div className="space-y-1">
-                <label className="label-field">Account Email</label>
-                <div className="relative">
-                  <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} disabled={loading} className="input-field pl-9" placeholder="ten@email.com" />
-                  <Mail className="w-4 h-4 text-sub absolute left-3 top-2.5" />
-                </div>
-              </div>
-              <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-1.5 disabled:opacity-50">
-                {loading ? (<><Loader2 className="w-4 h-4 animate-spin" />Sending...</>) : ('Send OTP Code')}
-              </button>
-            </form>
-          )}
-
-          {step === 2 && (
-            <form onSubmit={handleResetPassword} className="space-y-4">
-              <div className="space-y-1">
-                <label className="label-field text-center block">OTP Code (6 digits)</label>
-                <input type="text" required maxLength={6} value={otp} onChange={(e) => setOtp(e.target.value)} disabled={loading} className="input-field text-center text-sm font-bold tracking-widest font-mono" placeholder="------" />
-              </div>
-              <div className="space-y-1">
-                <label className="label-field">New Password</label>
-                <div className="relative">
-                  <input type="password" required value={newPassword} onChange={(e) => setNewPassword(e.target.value)} disabled={loading} className="input-field pl-9" placeholder="Min 6 characters" />
-                  <Lock className="w-4 h-4 text-sub absolute left-3 top-2.5" />
-                </div>
-              </div>
-              <div className="space-y-1">
-                <label className="label-field">Confirm Password</label>
-                <div className="relative">
-                  <input type="password" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} disabled={loading} className="input-field pl-9" placeholder="Re-enter new password" />
-                  <Lock className="w-4 h-4 text-sub absolute left-3 top-2.5" />
-                </div>
-              </div>
-              <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-1.5 disabled:opacity-50">
-                {loading ? (<><Loader2 className="w-4 h-4 animate-spin" />Resetting...</>) : ('Reset Password')}
-              </button>
-            </form>
-          )}
-
-          {step === 3 && (
-            <div className="text-center space-y-4 py-2">
-              <div className="w-10 h-10 rounded-full bg-success-soft border border-success/20 flex items-center justify-center mx-auto text-success">
-                <CheckCircle2 className="w-5 h-5" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="font-semibold text-ink text-sm">Password Reset Successful!</h3>
-                <p className="text-xs text-sub">Your password has been changed. You can now log in with your new password.</p>
-              </div>
-              <button onClick={onSwitchToLogin} className="btn-primary w-full">Back to Login</button>
-            </div>
-          )}
-        </div>
-
-        {step !== 3 && (
-          <div className="text-center">
-            <button onClick={onSwitchToLogin} disabled={loading} className="inline-flex items-center gap-1 text-sub hover:text-ink text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-accent/20 rounded">
-              <ChevronLeft className="w-4 h-4" />Back to Login
-            </button>
+      {step === 1 && (
+        <form onSubmit={handleSendOtp} className="space-y-5">
+          <div>
+            <label className="label-mono"><span className="text-accent">01</span> Account email</label>
+            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} disabled={loading} className="input-line" placeholder="you@email.com" />
           </div>
-        )}
-      </div>
-    </div>
+          <button type="submit" disabled={loading} className="btn-editorial mt-3">
+            {loading ? (<><Loader2 className="w-3.5 h-3.5 animate-spin" />Sending</>) : (<>Send OTP code<ArrowRight className="w-3.5 h-3.5" /></>)}
+          </button>
+        </form>
+      )}
+
+      {step === 2 && (
+        <form onSubmit={handleResetPassword} className="space-y-5">
+          <div>
+            <label className="label-mono"><span className="text-accent">02</span> OTP code (6 digits)</label>
+            <input type="text" required maxLength={6} value={otp} onChange={(e) => setOtp(e.target.value)} disabled={loading} className="input-line text-center text-sm font-bold tracking-[0.5em] font-mono" placeholder="------" />
+          </div>
+          <div>
+            <label className="label-mono"><span className="text-accent">03</span> New password</label>
+            <input type="password" required value={newPassword} onChange={(e) => setNewPassword(e.target.value)} disabled={loading} className="input-line" placeholder="Min 6 characters" />
+          </div>
+          <div>
+            <label className="label-mono"><span className="text-accent">04</span> Confirm password</label>
+            <input type="password" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} disabled={loading} className="input-line" placeholder="Re-enter new password" />
+          </div>
+          <button type="submit" disabled={loading} className="btn-editorial mt-3">
+            {loading ? (<><Loader2 className="w-3.5 h-3.5 animate-spin" />Resetting</>) : (<>Reset password<ArrowRight className="w-3.5 h-3.5" /></>)}
+          </button>
+        </form>
+      )}
+
+      {step === 3 && (
+        <div className="space-y-4 py-2">
+          <div className="w-9 h-9 rounded-full bg-success-soft border border-success/20 flex items-center justify-center text-success">
+            <CheckCircle2 className="w-4.5 h-4.5" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="font-semibold text-ink text-sm">Password reset successful!</h3>
+            <p className="text-xs text-sub leading-relaxed">Your password has been changed. You can now sign in with your new password.</p>
+          </div>
+          <button onClick={onSwitchToLogin} className="btn-editorial">Back to sign in<ArrowRight className="w-3.5 h-3.5" /></button>
+        </div>
+      )}
+    </AuthLayout>
   );
 }

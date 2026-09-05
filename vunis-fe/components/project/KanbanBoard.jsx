@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { getTasksByProject, createTask, updateTask, updateTaskStatus, deleteTask } from '../../services/taskService';
-import { Kanban, Plus, Loader2, Pencil, Trash2, X, Check, CheckSquare, AlertCircle, Bookmark, CircleDot, Flame, ArrowUp, ArrowDown, Minus, Users, UserPlus } from 'lucide-react';
+import { getTasksByProject, createTask, updateTask, deleteTask } from '../../services/taskService';
+import { Plus, Loader2, Pencil, Trash2, CheckSquare, Flame, ArrowUp, ArrowDown, Minus, Clock } from 'lucide-react';
 import { getProjectMembers, getGanttData } from '../../services/projectService';
+import { getSprintsByProject } from '../../services/sprintService';
 import TaskDetailModal from './TaskDetailModal';
-import { useAuth } from '../../hooks/useAuth';
 import PriorityIcon from '../ui/PriorityIcon';
 import IssueTypeIcon from '../ui/IssueTypeIcon';
 
@@ -33,9 +33,9 @@ const ROLES = [
   'DevOps Engineer'
 ];
 
-const EMPTY_TASK = { title: '', role: '', priority: 'medium', assigneeId: '', teamMemberIds: [], startDate: '', endDate: '', estimatedCost: '', phaseId: '' };
+const EMPTY_TASK = { title: '', role: '', priority: 'medium', assigneeId: '', startDate: '', endDate: '', estimatedCost: '', phaseId: '', sprintId: '' };
 
-function TaskForm({ initial, userList, phases = [], onSubmit, onCancel, submitLabel = 'Save', title = 'Create Task', projectDateRange }) {
+function TaskForm({ initial, userList, phases = [], sprints = [], onSubmit, onCancel, submitLabel = 'Save', title = 'Create Task', projectDateRange }) {
   const [form, setForm] = useState(initial || EMPTY_TASK);
   const [error, setError] = useState('');
 
@@ -52,12 +52,13 @@ function TaskForm({ initial, userList, phases = [], onSubmit, onCancel, submitLa
   };
 
   return (
-    <div className="bg-surface rounded-xl border border-border p-5 shadow-sm space-y-4">
+    <div className="bg-surface rounded-xl border border-border p-5 space-y-4">
       <div className="flex items-center justify-between border-b border-border pb-2.5">
         <h4 className="font-bold text-ink text-xs uppercase tracking-wider">{title}</h4>
         {projectDateRange && (
-          <span className="text-[10px] text-warning font-mono bg-warning-soft border border-warning/20 rounded px-2 py-0.5 font-bold">
-            ⏱ {projectDateRange}
+          <span className="inline-flex items-center gap-1 text-[10px] text-warning font-mono bg-warning-soft border border-warning/20 rounded px-2 py-0.5 font-bold">
+            <Clock className="w-3 h-3" />
+            {projectDateRange}
           </span>
         )}
       </div>
@@ -140,6 +141,16 @@ function TaskForm({ initial, userList, phases = [], onSubmit, onCancel, submitLa
             </div>
           )}
 
+          {sprints && sprints.length > 0 && (
+            <div className="space-y-1">
+              <label className="label-field">Sprint</label>
+              <select value={form.sprintId || ''} onChange={e => set('sprintId', e.target.value)} className="input-field">
+                <option value="">(Backlog — no Sprint)</option>
+                {sprints.map(s => <option key={s.id} value={s.id}>{s.name} {s.status === 'ACTIVE' ? '(Active)' : ''}</option>)}
+              </select>
+            </div>
+          )}
+
           <div className="space-y-1">
             <label className="label-field">Estimated Cost (VND)</label>
             <input type="number" placeholder="e.g.: 5000000" value={form.estimatedCost}
@@ -158,64 +169,6 @@ function TaskForm({ initial, userList, phases = [], onSubmit, onCancel, submitLa
           </div>
         </div>
 
-        <div className="pt-3 border-t border-border space-y-2.5">
-          <div className="flex items-center justify-between">
-            <label className="text-[11px] font-bold text-ink uppercase tracking-wider flex items-center gap-1.5">
-              <Users className="w-3.5 h-3.5 text-accent" />
-              Assign Task Team
-            </label>
-            <span className="text-[10px] text-sub font-mono bg-bg px-2 py-0.5 rounded border border-border">
-              {(form.teamMemberIds?.length || 0) + (form.assigneeId ? 1 : 0)} members
-            </span>
-          </div>
-
-          <p className="text-[10px] text-sub font-normal">
-            Select team members to collaborate on this task:
-          </p>
-
-          <div className="flex flex-wrap gap-2 bg-bg p-3 rounded-xl border border-border max-h-32 overflow-y-auto">
-            {userList.map(u => {
-              const uId = u.id || u.userId;
-              const isLead = uId === form.assigneeId;
-              const isCoAssignee = form.teamMemberIds?.includes(uId);
-
-              return (
-                <button
-                  type="button"
-                  key={uId}
-                  onClick={() => {
-                    if (isLead) return;
-                    const current = form.teamMemberIds || [];
-                    const updated = isCoAssignee
-                      ? current.filter(id => id !== uId)
-                      : [...current, uId];
-                    set('teamMemberIds', updated);
-                  }}
-                  className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 border transition-colors cursor-pointer ${
-                    isLead
-                      ? 'bg-accent-soft text-accent border-accent/40 font-extrabold cursor-default'
-                      : isCoAssignee
-                      ? 'bg-success-soft text-success border-success/40'
-                      : 'bg-surface text-ink border-border hover:bg-accent-soft/50'
-                  }`}
-                >
-                  <span className={`w-4 h-4 rounded-full text-white flex items-center justify-center text-[9px] font-bold ${
-                    isLead ? 'bg-accent' : isCoAssignee ? 'bg-success' : 'bg-sub'
-                  }`}>
-                    {(u.name || u.email || 'U').charAt(0).toUpperCase()}
-                  </span>
-                  <span>{u.name || u.email}</span>
-                  {isLead ? (
-                    <span className="text-[9px] bg-accent text-white px-1 rounded font-bold">Lead</span>
-                  ) : (
-                    <span className="text-[10px] font-bold">{isCoAssignee ? '✓' : '+'}</span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
         <div className="flex gap-2 pt-3 border-t border-border justify-end">
           <button type="button" onClick={onCancel} className="btn-secondary">
             Cancel
@@ -229,237 +182,33 @@ function TaskForm({ initial, userList, phases = [], onSubmit, onCancel, submitLa
   );
 }
 
-function TaskTeamModal({ isOpen, onClose, task, userList, onSaveTaskTeam }) {
-  const [assigneeId, setAssigneeId] = useState('');
-  const [teamMemberIds, setTeamMemberIds] = useState([]);
-  const [subtasks, setSubtasks] = useState([]);
-  const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
-  const [newSubtaskAssignee, setNewSubtaskAssignee] = useState('');
-
-  useEffect(() => {
-    if (task) {
-      setAssigneeId(task.assigneeId || task.assignee?.id || '');
-      setTeamMemberIds(task.teamMemberIds || []);
-      setSubtasks(task.subtasks || []);
-    }
-  }, [task]);
-
-  if (!isOpen || !task) return null;
-
-  const handleToggleMember = (uId) => {
-    if (uId === assigneeId) return;
-    if (teamMemberIds.includes(uId)) {
-      setTeamMemberIds(prev => prev.filter(id => id !== uId));
-    } else {
-      setTeamMemberIds(prev => [...prev, uId]);
-    }
-  };
-
-  const handleAddSubtask = (e) => {
-    e.preventDefault();
-    if (!newSubtaskTitle.trim()) return;
-    setSubtasks(prev => [
-      ...prev,
-      {
-        id: `st-${Date.now()}`,
-        title: newSubtaskTitle.trim(),
-        assigneeId: newSubtaskAssignee || assigneeId,
-        completed: false
-      }
-    ]);
-    setNewSubtaskTitle('');
-  };
-
-  const handleRemoveSubtask = (index) => {
-    setSubtasks(prev => prev.filter((_, idx) => idx !== index));
-  };
-
-  const handleToggleSubtask = (index) => {
-    setSubtasks(prev => prev.map((st, idx) => idx === index ? { ...st, completed: !st.completed } : st));
-  };
-
-  const handleSave = () => {
-    onSaveTaskTeam(task.id, {
-      assigneeId,
-      teamMemberIds,
-      subtasks
-    });
-    onClose();
-  };
-
-  return (
-    <div className="fixed inset-0 bg-ink/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-surface rounded-xl border border-border p-5 max-w-lg w-full space-y-4 shadow-xl">
-        <div className="flex items-center justify-between border-b border-border pb-3">
-          <div>
-            <span className="text-[10px] font-bold text-accent uppercase tracking-wider bg-accent-soft px-2 py-0.5 rounded border border-accent/20">
-              Manage Task Team
-            </span>
-            <h3 className="font-bold text-ink text-sm mt-1 truncate max-w-sm">
-              👥 {task.title}
-            </h3>
-          </div>
-          <button onClick={onClose} className="p-1 text-sub hover:text-ink rounded-lg cursor-pointer transition-colors">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <div className="space-y-1.5 bg-bg p-3 rounded-xl border border-border">
-          <label className="text-[11px] font-bold text-ink uppercase tracking-wider flex items-center gap-1.5">
-            👑 Task Lead (Assignee)
-          </label>
-          <select
-            value={assigneeId}
-            onChange={e => setAssigneeId(e.target.value)}
-            className="input-field font-semibold"
-          >
-            {userList.map(u => (
-              <option key={u.id || u.userId} value={u.id || u.userId}>
-                👤 {u.name || u.user?.name || u.email} ({u.role || 'Member'})
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-[11px] font-bold text-ink uppercase tracking-wider flex items-center justify-between">
-            <span>Collaborating Members (<span className="font-mono">{teamMemberIds.length + (assigneeId ? 1 : 0)}</span> members)</span>
-          </label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-36 overflow-y-auto p-1">
-            {userList.map(u => {
-              const uId = u.id || u.userId;
-              const isLead = uId === assigneeId;
-              const isMember = teamMemberIds.includes(uId);
-
-              return (
-                <div
-                  key={uId}
-                  onClick={() => handleToggleMember(uId)}
-                  className={`p-2 rounded-lg border flex items-center justify-between transition-colors cursor-pointer ${
-                    isLead
-                      ? 'bg-accent-soft border-accent/40 font-bold text-accent cursor-default'
-                      : isMember
-                      ? 'bg-success-soft border-success/40 font-bold text-success'
-                      : 'bg-surface border-border text-ink hover:bg-accent-soft/30'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className={`w-6 h-6 rounded-full text-white font-bold text-[10px] flex items-center justify-center shrink-0 ${
-                      isLead ? 'bg-accent' : isMember ? 'bg-success' : 'bg-sub'
-                    }`}>
-                      {(u.name || u.email || 'U').charAt(0).toUpperCase()}
-                    </div>
-                    <span className="text-xs truncate">{u.name || u.email}</span>
-                  </div>
-                  <span className="text-[10px] shrink-0 font-bold">
-                    {isLead ? <span className="bg-accent text-white px-1.5 py-0.5 rounded text-[9px]">Lead</span> : isMember ? '✓ Selected' : '+ Add'}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="space-y-2 pt-2 border-t border-border">
-          <label className="text-[11px] font-bold text-ink uppercase tracking-wider flex items-center gap-1">
-            <CheckSquare className="w-3.5 h-3.5 text-accent" />
-            Assign Subtasks (<span className="font-mono">{subtasks.length}</span>)
-          </label>
-
-          <form onSubmit={handleAddSubtask} className="flex gap-2">
-            <input
-              type="text"
-              placeholder="e.g.: UI Design, Code API..."
-              value={newSubtaskTitle}
-              onChange={e => setNewSubtaskTitle(e.target.value)}
-              className="flex-1 input-field"
-            />
-            <select
-              value={newSubtaskAssignee}
-              onChange={e => setNewSubtaskAssignee(e.target.value)}
-              className="w-36 input-field"
-            >
-              {userList.map(u => (
-                <option key={u.id || u.userId} value={u.id || u.userId}>
-                  {u.name || u.email}
-                </option>
-              ))}
-            </select>
-            <button type="submit" className="btn-primary text-xs shrink-0">
-              + Add
-            </button>
-          </form>
-
-          <div className="max-h-28 overflow-y-auto space-y-1.5 pr-1">
-            {subtasks.length === 0 ? (
-              <p className="text-[11px] text-sub italic text-center py-2">No subtasks assigned yet</p>
-            ) : (
-              subtasks.map((st, idx) => {
-                const assignedUser = userList.find(u => (u.id || u.userId) === st.assigneeId);
-                return (
-                  <div key={st.id || idx} className="flex items-center justify-between p-2 bg-bg border border-border rounded-lg text-xs">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <input
-                        type="checkbox"
-                        checked={st.completed}
-                        onChange={() => handleToggleSubtask(idx)}
-                        className="rounded text-accent focus:ring-accent/40 cursor-pointer"
-                      />
-                      <span className={`truncate font-semibold ${st.completed ? 'line-through text-sub' : 'text-ink'}`}>
-                        {st.title}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-[10px] font-bold text-sub bg-surface border border-border px-1.5 py-0.5 rounded">
-                        👤 {assignedUser?.name || 'Unassigned'}
-                      </span>
-                      <button onClick={() => handleRemoveSubtask(idx)} className="text-sub hover:text-danger transition-colors cursor-pointer">
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </div>
-
-        <div className="flex justify-end gap-2 pt-3 border-t border-border">
-          <button onClick={onClose} className="btn-secondary">
-            Cancel
-          </button>
-          <button onClick={handleSave} className="btn-primary">
-            Save Team Changes
-          </button>
-        </div>
-
-      </div>
-    </div>
-  );
-}
-
 export default function KanbanBoard({ projectId, project }) {
-  const { user } = useAuth();
   const isPM = project?.userRole === 'PROJECT_MANAGER' || project?.userRole === 'Project Manager';
+  const modelType = project?.modelType || 'WATERFALL';
+  const usesSprints = modelType === 'AGILE_SCRUM';
+  const usesPhases = ['WATERFALL', 'V_MODEL', 'SPIRAL_MODEL'].includes(modelType);
   const [tasks, setTasks] = useState([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('all');
+  const [phaseFilter, setPhaseFilter] = useState('all');
+  const [sprintFilter, setSprintFilter] = useState('all');
   const [userList, setUserList] = useState([]);
   const [phases, setPhases] = useState([]);
+  const [sprints, setSprints] = useState([]);
   const [defaultAssignee, setDefaultAssignee] = useState('');
-  const [taskTeamModal, setTaskTeamModal] = useState({ isOpen: false, task: null });
   const [taskDetailModal, setTaskDetailModal] = useState({ isOpen: false, task: null });
 
   useEffect(() => {
     const fetchAllData = async () => {
       try {
-        const [tasksData, usersData, ganttData] = await Promise.all([
+        const [tasksData, usersData, ganttData, sprintsData] = await Promise.all([
           getTasksByProject(projectId),
           getProjectMembers(projectId),
-          getGanttData(projectId).catch(() => null)
+          usesPhases ? getGanttData(projectId).catch(() => null) : Promise.resolve(null),
+          usesSprints ? getSprintsByProject(projectId).catch(() => []) : Promise.resolve([])
         ]);
 
         setTasks(tasksData);
@@ -467,6 +216,7 @@ export default function KanbanBoard({ projectId, project }) {
         if (ganttData && ganttData.phases) {
           setPhases(ganttData.phases);
         }
+        setSprints(sprintsData);
         if (usersData.length > 0) {
           setDefaultAssignee(usersData[0].id || usersData[0].userId);
         }
@@ -498,11 +248,11 @@ export default function KanbanBoard({ projectId, project }) {
       role: form.role,
       priority: form.priority,
       assigneeId: form.assigneeId || defaultAssignee,
-      teamMemberIds: form.teamMemberIds || [],
       startDate: form.startDate || null,
       endDate: form.endDate || null,
       estimatedCost: form.estimatedCost !== '' ? Number(form.estimatedCost) : 0,
       phaseId: form.phaseId || null,
+      sprintId: form.sprintId || null,
     });
     setShowCreateForm(false);
     loadTasks();
@@ -516,24 +266,14 @@ export default function KanbanBoard({ projectId, project }) {
       role: form.role,
       priority: form.priority,
       assigneeId: form.assigneeId,
-      teamMemberIds: form.teamMemberIds || [],
       startDate: form.startDate || null,
       endDate: form.endDate || null,
       estimatedCost: form.estimatedCost !== '' ? Number(form.estimatedCost) : 0,
       phaseId: form.phaseId || null,
+      sprintId: form.sprintId || null,
     });
     setEditingTask(null);
     loadTasks();
-  };
-
-  const handleSaveTaskTeam = async (taskId, teamData) => {
-    try {
-      await updateTask(taskId, teamData);
-      setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...teamData } : t));
-      loadTasks();
-    } catch (err) {
-      console.error('Error saving task team:', err);
-    }
   };
 
   const [deleteTaskModal, setDeleteTaskModal] = useState({ isOpen: false, taskId: null, taskTitle: '' });
@@ -559,18 +299,8 @@ export default function KanbanBoard({ projectId, project }) {
     }
   };
 
-  const handleMoveTask = async (taskId, newStatus) => {
-    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
-    try {
-      await updateTaskStatus(taskId, newStatus);
-    } catch (err) {
-      console.error('Error updating task:', err);
-      loadTasks();
-    }
-  };
-
   const totalTasks = tasks.length;
-  const doneTasks = tasks.filter(t => t.status === 'Done').length;
+  const doneTasks = tasks.filter(t => t.status === 'DONE').length;
   const progress = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
 
   const projectDateRange = project?.startDate && project?.endDate
@@ -583,11 +313,11 @@ export default function KanbanBoard({ projectId, project }) {
     role: editingTask.data.role || '',
     priority: editingTask.data.priority || 'medium',
     assigneeId: editingTask.data.assignee?.id || defaultAssignee,
-    teamMemberIds: editingTask.data.teamMemberIds || [],
     startDate: editingTask.data.startDate ? new Date(editingTask.data.startDate).toISOString().split('T')[0] : '',
     endDate: editingTask.data.endDate ? new Date(editingTask.data.endDate).toISOString().split('T')[0] : '',
     estimatedCost: editingTask.data.estimatedCost || '',
     phaseId: editingTask.data.phaseId || '',
+    sprintId: editingTask.data.sprint || '',
   } : null;
 
   return (
@@ -611,7 +341,7 @@ export default function KanbanBoard({ projectId, project }) {
           </div>
           <div className="flex justify-between text-[10px] text-sub mt-2 font-semibold uppercase tracking-wider font-mono">
             <span>{doneTasks}/{totalTasks} tasks done</span>
-            <span>{tasks.filter(t => t.status === 'InProgress').length} Active</span>
+            <span>{tasks.filter(t => t.status === 'IN_PROGRESS').length} Active</span>
           </div>
         </div>
       )}
@@ -646,6 +376,21 @@ export default function KanbanBoard({ projectId, project }) {
             <option value="medium">Medium</option>
             <option value="low">Low</option>
           </select>
+
+          {usesPhases && phases.length > 0 && (
+            <select value={phaseFilter} onChange={e => setPhaseFilter(e.target.value)} className="input-field w-auto cursor-pointer">
+              <option value="all">All Phases</option>
+              {phases.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          )}
+
+          {usesSprints && sprints.length > 0 && (
+            <select value={sprintFilter} onChange={e => setSprintFilter(e.target.value)} className="input-field w-auto cursor-pointer">
+              <option value="all">All Sprints</option>
+              <option value="backlog">Backlog (no Sprint)</option>
+              {sprints.map(s => <option key={s.id} value={s.id}>{s.name} {s.status === 'ACTIVE' ? '(Active)' : ''}</option>)}
+            </select>
+          )}
         </div>
 
         <div className="flex items-center gap-2 text-xs font-bold overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
@@ -663,6 +408,7 @@ export default function KanbanBoard({ projectId, project }) {
           initial={{ ...EMPTY_TASK, assigneeId: defaultAssignee }}
           userList={userList}
           phases={phases}
+          sprints={sprints}
           onSubmit={handleCreate}
           onCancel={() => setShowCreateForm(false)}
           submitLabel="Create"
@@ -677,6 +423,7 @@ export default function KanbanBoard({ projectId, project }) {
           initial={editInitial}
           userList={userList}
           phases={phases}
+          sprints={sprints}
           onSubmit={handleEdit}
           onCancel={() => setEditingTask(null)}
           submitLabel="Update"
@@ -698,7 +445,10 @@ export default function KanbanBoard({ projectId, project }) {
               const matchesSearch = t.title.toLowerCase().includes(searchTerm.toLowerCase());
               const matchesPriority = priorityFilter === 'all' || (t.priority || 'medium') === priorityFilter;
               const matchesStatus = col.statusKeys.includes(t.status) || t.status === col.id;
-              return matchesStatus && matchesSearch && matchesPriority;
+              const matchesPhase = phaseFilter === 'all' || t.phaseId === phaseFilter;
+              const matchesSprint = sprintFilter === 'all'
+                || (sprintFilter === 'backlog' ? !t.sprint : t.sprint === sprintFilter);
+              return matchesStatus && matchesSearch && matchesPriority && matchesPhase && matchesSprint;
             });
 
             return (
@@ -724,10 +474,8 @@ export default function KanbanBoard({ projectId, project }) {
                       const subtaskCount = task.subtasks?.length || 0;
                       const completedSubtasks = task.subtasks?.filter(s => s.completed || s.done).length || 0;
                       const issueKey = task.key || `VU-${(task.id || '').toString().slice(-4).toUpperCase() || '101'}`;
-
-                      const coAssigneeIds = task.teamMemberIds || [];
-                      const coAssignees = userList.filter(u => coAssigneeIds.includes(u.id || u.userId) && (u.id || u.userId) !== task.assigneeId);
-                      const totalTeamCount = 1 + coAssignees.length;
+                      const taskPhase = usesPhases ? phases.find(p => p.id === task.phaseId) : null;
+                      const taskSprint = usesSprints ? sprints.find(s => s.id === task.sprint) : null;
 
                       return (
                         <div
@@ -757,6 +505,17 @@ export default function KanbanBoard({ projectId, project }) {
                             </div>
                           </div>
 
+                          {(taskPhase || taskSprint) && (
+                            <div className="flex items-center gap-1.5 -mt-1.5">
+                              {taskPhase && (
+                                <span className="jira-badge normal-case truncate max-w-[140px]" title={taskPhase.name}>{taskPhase.name}</span>
+                              )}
+                              {taskSprint && (
+                                <span className="jira-badge normal-case truncate max-w-[140px]" title={taskSprint.name}>{taskSprint.name}</span>
+                              )}
+                            </div>
+                          )}
+
                           <div className="flex items-center justify-between mt-3 text-xs text-sub font-medium">
                             <div className="flex items-center gap-1.5">
                               <IssueTypeIcon type={type} className="w-3.5 h-3.5" />
@@ -771,7 +530,7 @@ export default function KanbanBoard({ projectId, project }) {
                                 </span>
                               )}
                               <PriorityIcon priority={priority} className="w-4 h-4" />
-                              <div className="w-6 h-6 rounded-full bg-accent text-white font-bold text-[10px] flex items-center justify-center shrink-0 shadow-sm" title={`Assignee: ${assigneeName}`}>
+                              <div className="w-6 h-6 rounded-full bg-accent text-white font-bold text-[10px] flex items-center justify-center shrink-0" title={`Assignee: ${assigneeName}`}>
                                 {assigneeInitial}
                               </div>
                             </div>
@@ -812,16 +571,7 @@ export default function KanbanBoard({ projectId, project }) {
         </div>
       )}
 
-      {/* TASK TEAM MANAGEMENT MODAL */}
-      <TaskTeamModal
-        isOpen={taskTeamModal.isOpen}
-        task={taskTeamModal.task}
-        userList={userList}
-        onClose={() => setTaskTeamModal({ isOpen: false, task: null })}
-        onSaveTaskTeam={handleSaveTaskTeam}
-      />
-
-      {/* TASK DETAIL MODAL (NEW SCREEN 6) */}
+      {/* TASK DETAIL MODAL */}
       <TaskDetailModal
         isOpen={taskDetailModal.isOpen}
         task={taskDetailModal.task}

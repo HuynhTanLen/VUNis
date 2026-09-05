@@ -5,6 +5,7 @@ const authRepo = require('../auth/auth.repository');
 const { AppError } = require('../../shared/errors/AppError');
 const { ProjectNotFoundError, ForbiddenProjectActionError } = require('./project.error');
 const projectMemberService = require('../projectMembers/projectMember.service');
+const { DEFAULT_PHASE_TEMPLATES } = require('../projectPhases/projectPhase.service');
 
 
 
@@ -116,7 +117,33 @@ const create = async (dto, userId) => {
             })
         }
 
-        else if(proj.modelType === 'V_MODEL')
+        // V-Model và Spiral Model cũng chia giai đoạn theo thời lượng dự án, tương tự Waterfall,
+        // chỉ khác ở tên và số lượng giai đoạn (chia đều thời gian thay vì theo tỷ lệ ratio).
+        else if (proj.modelType === 'V_MODEL' || proj.modelType === 'SPIRAL_MODEL') {
+            const phaseNames = DEFAULT_PHASE_TEMPLATES[proj.modelType];
+            const start = new Date(proj.startDate);
+            const totalDays = proj.durationWeeks * 7;
+            const dayPerPhase = Math.max(1, Math.round(totalDays / phaseNames.length));
+            let currentStartDate = new Date(start);
+
+            const phasesToInsert = phaseNames.map((name, index) => {
+                const currentEndDate = new Date(currentStartDate);
+                currentEndDate.setDate(currentStartDate.getDate() + dayPerPhase);
+
+                const phaseRecord = {
+                    projectId: proj.id,
+                    name,
+                    order: index + 1,
+                    startDate: new Date(currentStartDate),
+                    endDate: new Date(currentEndDate)
+                };
+
+                currentStartDate = new Date(currentEndDate);
+                return phaseRecord;
+            });
+            await tx.projectPhase.createMany({ data: phasesToInsert });
+        }
+
         return proj;
     });
 

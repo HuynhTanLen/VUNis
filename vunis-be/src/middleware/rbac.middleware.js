@@ -62,6 +62,12 @@ const checkProjectPermission = (...allowedProjectRoles) => {
                 if (task) projectId = task.projectId;
             }
 
+            // :id có thể chính là taskId (route PUT/DELETE /tasks/:id) — Task CÓ projectId trực tiếp
+            if (!projectId && req.params?.id) {
+                const task = await prisma.task.findUnique({ where: { id: req.params.id } });
+                if (task) projectId = task.projectId;
+            }
+
             // :id có thể là commentId — Comment không có projectId trực tiếp, phải đi qua Task
             if (!projectId && req.params?.id) {
                 const comment = await prisma.comment.findUnique({ where: { id: req.params.id } });
@@ -84,6 +90,12 @@ const checkProjectPermission = (...allowedProjectRoles) => {
             if (!projectId && req.params?.id) {
                 const label = await prisma.label.findUnique({ where: { id: req.params.id } });
                 if (label) projectId = label.projectId;
+            }
+
+            // :id có thể là projectPhaseId — ProjectPhase CÓ projectId trực tiếp
+            if (!projectId && req.params?.id) {
+                const phase = await prisma.projectPhase.findUnique({ where: { id: req.params.id } });
+                if (phase) projectId = phase.projectId;
             }
 
             if (!projectId) {

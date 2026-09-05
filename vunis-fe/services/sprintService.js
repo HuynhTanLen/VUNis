@@ -14,3 +14,8 @@ export const completeSprint = async (sprintId) => {
     const response = await api.put(`/sprints/${sprintId}/complete`);
     return response.data;
 };
+
+export const startSprint = async (sprintId) => {
+    const response = await api.patch(`/sprints/${sprintId}/start`);
+    return response.data;
+};

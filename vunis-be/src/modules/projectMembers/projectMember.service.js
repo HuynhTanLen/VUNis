@@ -60,8 +60,7 @@ const addMemberToProject = async (dto) => {
     await memberRepo.create({
         userId: targetUser.id,
         projectId: dto.projectId,
-        role: dto.role || 'MEMBER',
-        status: 'accepted'
+        role: dto.role || 'MEMBER'
     });
 
     await prisma.notification.create({

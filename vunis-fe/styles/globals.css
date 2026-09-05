@@ -2,6 +2,34 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* This app is light-only. Without this, Chromium/Edge's automatic dark-mode
+     inversion (triggered by an OS/browser dark theme) repaints the whole page
+     with inverted, oversaturated colors — which is what "glaring" reports are. */
+  color-scheme: light;
+
+  /* Mirrors the tailwind.config.js color tokens — kept in sync manually.
+     Needed because raw SVG fill/stroke attributes (diagrams, charts) can't
+     consume Tailwind utility classes and must reference a literal color. */
+  --color-bg: #EEF0F2;
+  --color-surface: #F8F9FA;
+  --color-border: #CDD3D6;
+  --color-ink: #1B2030;
+  --color-sub: #5B6270;
+  --color-dim: #9AA1A8;
+  --color-accent: #C4491B;
+  --color-accent-hover: #A83913;
+  --color-accent-soft: #FBEBE1;
+  --color-success: #3F7D5C;
+  --color-success-dark: #2E5D44;
+  --color-warning: #AD8A34;
+  --color-danger: #B23A2E;
+  --color-story: #3F7D5C;
+  --color-task: #35618C;
+  --color-bug: #B23A2E;
+  --color-epic: #6E4F8C;
+}
+
 @layer base {
   body {
     @apply bg-bg text-ink font-sans antialiased;
@@ -10,7 +38,7 @@
 
 @layer components {
   .card-clean {
-    @apply bg-surface rounded-xl border border-border p-5 shadow-sm transition-all duration-150;
+    @apply bg-surface rounded border border-border p-5 transition-colors duration-150;
   }
 
   .badge-status {
@@ -33,30 +61,60 @@
   }
 
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2 bg-accent text-white text-xs font-semibold rounded-lg hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-accent/40 active:scale-[0.98] transition-colors shadow-sm;
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 bg-accent text-white text-xs font-semibold rounded hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-accent/40 active:scale-[0.98] transition-colors;
   }
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2 bg-surface border border-border text-ink text-xs font-semibold rounded-lg hover:bg-bg focus:outline-none focus:ring-2 focus:ring-accent/20 active:scale-[0.98] transition-colors shadow-sm;
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 bg-surface border border-border text-ink text-xs font-semibold rounded hover:bg-bg focus:outline-none focus:ring-2 focus:ring-accent/20 active:scale-[0.98] transition-colors;
   }
   .btn-ghost {
-    @apply inline-flex items-center justify-center p-2 text-sub hover:text-ink hover:bg-accent-soft rounded-md focus:outline-none focus:ring-2 focus:ring-accent/20 transition-colors;
+    @apply inline-flex items-center justify-center p-2 text-sub hover:text-ink hover:bg-accent-soft rounded focus:outline-none focus:ring-2 focus:ring-accent/20 transition-colors;
   }
   .btn-danger {
-    @apply inline-flex items-center justify-center gap-2 px-3 py-1.5 border border-danger/40 text-danger text-xs font-semibold rounded-lg hover:bg-danger-soft focus:outline-none focus:ring-2 focus:ring-danger/20 active:scale-[0.98] transition-colors;
+    @apply inline-flex items-center justify-center gap-2 px-3 py-1.5 border border-danger/40 text-danger text-xs font-semibold rounded hover:bg-danger-soft focus:outline-none focus:ring-2 focus:ring-danger/20 active:scale-[0.98] transition-colors;
   }
 
   .input-field {
-    @apply w-full px-3.5 py-2 bg-surface border border-border rounded-lg text-xs text-ink placeholder-sub/60 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-colors font-normal;
+    @apply w-full px-3.5 py-2 bg-surface border border-border rounded text-xs text-ink placeholder-sub/60 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-colors font-normal;
   }
   .label-field {
     @apply block text-xs font-semibold text-ink/80 mb-1;
   }
 
+  /* Dark glass variants — used on the auth screens (login/register/forgot-password) */
+  .input-field-dark {
+    @apply w-full px-3.5 py-2.5 bg-white/[0.04] border border-white/10 rounded-lg text-xs text-white placeholder-white/30 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/40 focus:bg-white/[0.06] transition-colors font-normal;
+  }
+  .label-field-dark {
+    @apply block text-[11px] font-semibold text-white/50 uppercase tracking-wider mb-1.5 font-mono;
+  }
+
+  /* Editorial underline variants — used on the auth + profile screens */
+  .input-line {
+    @apply w-full bg-transparent border-0 border-b border-border rounded-none px-0 py-2.5 text-sm text-ink placeholder-sub/40 focus:outline-none focus:border-accent transition-colors;
+  }
+  /* Chrome/Edge paint autofilled inputs with an opaque light-yellow background by default,
+     which breaks the transparent underline look — force it back to the page background. */
+  .input-line:-webkit-autofill,
+  .input-line:-webkit-autofill:hover,
+  .input-line:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--color-ink);
+    -webkit-box-shadow: 0 0 0px 1000px var(--color-bg) inset;
+    box-shadow: 0 0 0px 1000px var(--color-bg) inset;
+    caret-color: var(--color-ink);
+    transition: background-color 9999s ease-in-out 0s;
+  }
+  .label-mono {
+    @apply flex items-baseline gap-2 text-[10px] font-mono font-semibold text-sub/70 uppercase tracking-[0.15em] mb-1.5;
+  }
+  .btn-editorial {
+    @apply w-full inline-flex items-center justify-center gap-2 bg-ink text-white text-xs font-semibold uppercase tracking-[0.1em] py-3 rounded-sm hover:bg-ink/85 focus:outline-none focus:ring-2 focus:ring-ink/20 focus:ring-offset-2 focus:ring-offset-bg active:scale-[0.99] transition-all disabled:opacity-50;
+  }
+
   .jira-card {
-    @apply bg-surface rounded-md shadow-[0_1px_2px_rgba(9,30,66,0.25)] hover:bg-bg transition-all duration-150 cursor-grab active:cursor-grabbing;
+    @apply bg-surface rounded border border-border hover:border-accent/50 transition-colors duration-150 cursor-grab active:cursor-grabbing;
   }
 
   .jira-badge {
-    @apply inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-bg text-sub border border-border/50;
+    @apply inline-flex items-center justify-center px-1.5 py-0.5 rounded-sm text-[11px] font-bold uppercase tracking-wider bg-bg text-sub border border-border/50;
   }
 }

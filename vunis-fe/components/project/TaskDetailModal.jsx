@@ -1,16 +1,15 @@
 import { useState, useEffect } from 'react';
-import { X, FileText, CheckSquare, MessageSquare, Paperclip, DollarSign, Loader2, Plus, Trash2, Send, CornerDownRight, Reply, UserCheck, History, BarChart3, ChevronDown } from 'lucide-react';
+import { X, FileText, CheckSquare, MessageSquare, Paperclip, DollarSign, Loader2, Plus, Trash2, Send, CornerDownRight, Reply, UserCheck, History, BarChart3, ChevronDown, Link2 } from 'lucide-react';
 import { getCommentsByTask, createComment, deleteComment } from '../../services/commentService';
 import { getSocket, joinTaskRoom, leaveTaskRoom } from '../../services/socketClient';
-import { getTaskAssignmentsHistory } from '../../services/taskService';
-import { updateTask } from '../../services/taskService';
+import { getTaskAssignmentsHistory, updateTask, addSubtask, toggleSubtask, removeSubtask } from '../../services/taskService';
+import { getTaskAttachments, addAttachment, deleteAttachment } from '../../services/attachmentService';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
-import { useAuth } from '../../hooks/useAuth';
+import Toast from '../ui/Toast';
 import GanttChart from './GanttChart';
 
 export default function TaskDetailModal({ isOpen, task, onClose, userList = [], onTaskUpdated, isPM = false, projectId }) {
-  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('description');
   const [comments, setComments] = useState([]);
   const [loadingComments, setLoadingComments] = useState(false);
@@ -19,9 +18,17 @@ export default function TaskDetailModal({ isOpen, task, onClose, userList = [], 
   const [submittingComment, setSubmittingComment] = useState(false);
   const [statusLoading, setStatusLoading] = useState(false);
 
-  // Subtasks local state
+  // Subtasks
   const [subtasks, setSubtasks] = useState(task?.subtasks || []);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
+  const [subtaskBusy, setSubtaskBusy] = useState(false);
+
+  // Attachments
+  const [attachments, setAttachments] = useState([]);
+  const [loadingAttachments, setLoadingAttachments] = useState(false);
+  const [attachmentUrl, setAttachmentUrl] = useState('');
+  const [attachmentName, setAttachmentName] = useState('');
+  const [submittingAttachment, setSubmittingAttachment] = useState(false);
 
   // TaskAssignment History
   const [assignments, setAssignments] = useState([]);
@@ -31,11 +38,18 @@ export default function TaskDetailModal({ isOpen, task, onClose, userList = [], 
   const [handoverModal, setHandoverModal] = useState({ open: false, newAssigneeId: '' });
   const [handoverLoading, setHandoverLoading] = useState(false);
 
+  const [toast, setToast] = useState(null);
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
   useEffect(() => {
     if (isOpen && task) {
       setSubtasks(task?.subtasks || []);
       if (activeTab === 'comments') loadComments();
       if (activeTab === 'history') loadAssignments();
+      if (activeTab === 'attachments') loadAttachments();
     }
   }, [isOpen, task, activeTab]);
 
@@ -47,7 +61,7 @@ export default function TaskDetailModal({ isOpen, task, onClose, userList = [], 
       if (socket) {
         const handleNewComment = (comment) => {
           setComments(prev => {
-            if (prev.some(c => (c.id === comment.id || c._id === comment._id))) return prev;
+            if (prev.some(c => c.id === comment.id)) return prev;
             return [...prev, comment];
           });
         };
@@ -99,6 +113,7 @@ export default function TaskDetailModal({ isOpen, task, onClose, userList = [], 
       loadComments();
     } catch (err) {
       console.error('Error adding comment:', err);
+      showToast(err.response?.data?.message || 'Failed to add comment.', 'error');
     } finally {
       setSubmittingComment(false);
     }
@@ -110,6 +125,7 @@ export default function TaskDetailModal({ isOpen, task, onClose, userList = [], 
       loadComments();
     } catch (err) {
       console.error('Error deleting comment:', err);
+      showToast(err.response?.data?.message || 'Failed to delete comment.', 'error');
     }
   };
 
@@ -117,15 +133,102 @@ export default function TaskDetailModal({ isOpen, task, onClose, userList = [], 
     return (typeof c.author === 'object' ? c.author?.name : c.author) || c.user?.name || 'Member';
   };
 
-  const handleToggleSubtask = (subtaskId) => {
-    setSubtasks(prev => prev.map(s => s.id === subtaskId ? { ...s, done: !s.done } : s));
+  const loadAttachments = async () => {
+    if (!task?.id) return;
+    try {
+      setLoadingAttachments(true);
+      const data = await getTaskAttachments(task.id);
+      setAttachments(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Error loading attachments:', err);
+      setAttachments([]);
+    } finally {
+      setLoadingAttachments(false);
+    }
   };
 
-  const handleAddSubtask = (e) => {
+  const handleAddAttachment = async (e) => {
     e.preventDefault();
-    if (!newSubtaskTitle.trim()) return;
-    setSubtasks(prev => [...prev, { id: Date.now(), title: newSubtaskTitle.trim(), done: false }]);
-    setNewSubtaskTitle('');
+    if (!attachmentUrl.trim() || !task?.id) return;
+    const originalName = attachmentName.trim() || attachmentUrl.trim().split('/').pop() || 'file';
+    try {
+      setSubmittingAttachment(true);
+      await addAttachment({
+        taskId: task.id,
+        filename: originalName,
+        originalName,
+        url: attachmentUrl.trim(),
+      });
+      setAttachmentUrl('');
+      setAttachmentName('');
+      loadAttachments();
+      showToast('Attachment added.');
+    } catch (err) {
+      console.error('Error adding attachment:', err);
+      showToast(err.response?.data?.message || 'Failed to add attachment.', 'error');
+    } finally {
+      setSubmittingAttachment(false);
+    }
+  };
+
+  const handleDeleteAttachment = async (attachmentId) => {
+    try {
+      await deleteAttachment(attachmentId);
+      setAttachments(prev => prev.filter(a => a.id !== attachmentId));
+    } catch (err) {
+      console.error('Error deleting attachment:', err);
+      showToast(err.response?.data?.message || 'Failed to delete attachment.', 'error');
+    }
+  };
+
+  const handleToggleSubtask = async (subtaskId) => {
+    if (!task?.id) return;
+    const prevSubtasks = subtasks;
+    setSubtasks(prev => prev.map(s => s.id === subtaskId ? { ...s, completed: !s.completed } : s));
+    try {
+      setSubtaskBusy(true);
+      const updatedTask = await toggleSubtask(task.id, subtaskId);
+      setSubtasks(updatedTask?.subtasks || []);
+      if (onTaskUpdated) onTaskUpdated();
+    } catch (err) {
+      console.error('Error toggling subtask:', err);
+      setSubtasks(prevSubtasks);
+      showToast(err.response?.data?.message || 'Failed to update subtask.', 'error');
+    } finally {
+      setSubtaskBusy(false);
+    }
+  };
+
+  const handleAddSubtask = async (e) => {
+    e.preventDefault();
+    if (!newSubtaskTitle.trim() || !task?.id) return;
+    try {
+      setSubtaskBusy(true);
+      const updatedTask = await addSubtask(task.id, newSubtaskTitle.trim());
+      setSubtasks(updatedTask?.subtasks || []);
+      setNewSubtaskTitle('');
+      if (onTaskUpdated) onTaskUpdated();
+    } catch (err) {
+      console.error('Error adding subtask:', err);
+      showToast(err.response?.data?.message || 'Failed to add subtask.', 'error');
+    } finally {
+      setSubtaskBusy(false);
+    }
+  };
+
+  const handleRemoveSubtask = async (subtaskId) => {
+    if (!task?.id) return;
+    try {
+      setSubtaskBusy(true);
+      const updatedTask = await removeSubtask(task.id, subtaskId);
+      setSubtasks(updatedTask?.subtasks || []);
+      if (onTaskUpdated) onTaskUpdated();
+    } catch (err) {
+      console.error('Error removing subtask:', err);
+      showToast(err.response?.data?.message || 'Failed to remove subtask.', 'error');
+    } finally {
+      setSubtaskBusy(false);
+    }
   };
 
   // Handover: Select new Assignee -> open confirmation modal
@@ -140,7 +243,7 @@ export default function TaskDetailModal({ isOpen, task, onClose, userList = [], 
       }
     } catch (err) {
       console.error(err);
-      alert('Error updating assignee');
+      showToast(err.response?.data?.message || 'Failed to update assignee.', 'error');
     }
   };
 
@@ -151,7 +254,7 @@ export default function TaskDetailModal({ isOpen, task, onClose, userList = [], 
       if (onTaskUpdated) onTaskUpdated();
     } catch (err) {
       console.error(err);
-      alert('Error updating status');
+      showToast(err.response?.data?.message || 'Failed to update status.', 'error');
     } finally {
       setStatusLoading(false);
     }
@@ -168,6 +271,7 @@ export default function TaskDetailModal({ isOpen, task, onClose, userList = [], 
       if (onTaskUpdated) onTaskUpdated();
     } catch (err) {
       console.error('Error handing over task:', err);
+      showToast(err.response?.data?.message || 'Failed to hand over task.', 'error');
     } finally {
       setHandoverLoading(false);
     }
@@ -176,13 +280,10 @@ export default function TaskDetailModal({ isOpen, task, onClose, userList = [], 
   if (!isOpen || !task) return null;
 
   const issueKey = task.key || `VU-${(task.id || '').toString().slice(-4).toUpperCase() || '101'}`;
-  const priorityVariant = task.priority === 'High' || task.priority === 'Urgent' ? 'danger' : task.priority === 'Low' ? 'neutral' : 'warning';
-  const statusVariant = task.status === 'Done' ? 'success' : task.status === 'InProgress' ? 'warning' : 'accent';
+  const priorityVariant = task.priority === 'HIGH' || task.priority === 'URGENT' ? 'danger' : task.priority === 'LOW' ? 'neutral' : 'warning';
+  const statusVariant = task.status === 'DONE' ? 'success' : task.status === 'IN_PROGRESS' ? 'warning' : 'accent';
 
   const currentAssigneeId = task.assignee?.id || task.assignee || '';
-
-  // Check PM role
-  const isUserPM = isPM || (user && task?.project && false); // fallback to prop
 
   const tabs = [
     { id: 'description', label: 'Description', icon: FileText },
@@ -301,17 +402,29 @@ export default function TaskDetailModal({ isOpen, task, onClose, userList = [], 
               </div>
               <div className="space-y-2">
                 {(subtasks || []).map(st => (
-                  <label key={st.id} className="flex items-center gap-3 p-2.5 bg-bg border border-border rounded-lg hover:bg-accent-soft/30 transition-colors cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={st.done || st.completed || false}
-                      onChange={() => handleToggleSubtask(st.id)}
-                      className="rounded border-border text-accent focus:ring-accent/40 w-4 h-4"
-                    />
-                    <span className={`text-xs text-ink ${(st.done || st.completed) ? 'line-through text-sub' : 'font-medium'}`}>
-                      {st.title}
-                    </span>
-                  </label>
+                  <div key={st.id} className="flex items-center gap-3 p-2.5 bg-bg border border-border rounded-lg hover:bg-accent-soft/30 transition-colors">
+                    <label className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={st.done || st.completed || false}
+                        disabled={subtaskBusy}
+                        onChange={() => handleToggleSubtask(st.id)}
+                        className="rounded border-border text-accent focus:ring-accent/40 w-4 h-4 disabled:opacity-50"
+                      />
+                      <span className={`text-xs text-ink truncate ${(st.done || st.completed) ? 'line-through text-sub' : 'font-medium'}`}>
+                        {st.title}
+                      </span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveSubtask(st.id)}
+                      disabled={subtaskBusy}
+                      className="p-1 text-sub hover:text-danger rounded transition-colors disabled:opacity-50 shrink-0"
+                      title="Remove subtask"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 ))}
               </div>
               <form onSubmit={handleAddSubtask} className="flex gap-2 pt-2">
@@ -320,9 +433,10 @@ export default function TaskDetailModal({ isOpen, task, onClose, userList = [], 
                   placeholder="Add new subtask..."
                   value={newSubtaskTitle}
                   onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                  disabled={subtaskBusy}
                   className="input-field flex-1"
                 />
-                <Button type="submit" variant="secondary" icon={Plus}>Add</Button>
+                <Button type="submit" variant="secondary" icon={Plus} disabled={subtaskBusy}>Add</Button>
               </form>
             </div>
           )}
@@ -343,24 +457,24 @@ export default function TaskDetailModal({ isOpen, task, onClose, userList = [], 
                     const map = {};
                     const rootComments = [];
                     comments.forEach(c => {
-                      const cId = c.id || c._id;
+                      const cId = c.id;
                       map[cId] = { ...c, replies: Array.isArray(c.replies) ? [...c.replies] : [] };
                     });
                     comments.forEach(c => {
-                      const cId = c.id || c._id;
+                      const cId = c.id;
                       if (c.parentId && map[c.parentId]) {
-                        if (!map[c.parentId].replies.some(r => (r.id || r._id) === cId)) {
+                        if (!map[c.parentId].replies.some(r => r.id === cId)) {
                           map[c.parentId].replies.push(map[cId]);
                         }
                       } else if (!c.parentId) {
-                        if (!rootComments.some(r => (r.id || r._id) === cId)) {
+                        if (!rootComments.some(r => r.id === cId)) {
                           rootComments.push(map[cId]);
                         }
                       }
                     });
                     return rootComments.map(c => {
                       const authorName = getCommentAuthorName(c);
-                      const cId = c.id || c._id;
+                      const cId = c.id;
                       const replies = Array.isArray(c.replies) ? c.replies : [];
                       return (
                         <div key={cId} className="p-3 bg-bg border border-border rounded-lg space-y-1.5">
@@ -384,7 +498,7 @@ export default function TaskDetailModal({ isOpen, task, onClose, userList = [], 
                             <div className="pl-3 border-l-2 border-accent/20 ml-1 space-y-2 mt-2 pt-1">
                               {replies.map(r => {
                                 const rAuthorName = getCommentAuthorName(r);
-                                const rId = r.id || r._id;
+                                const rId = r.id;
                                 return (
                                   <div key={rId} className="p-2 bg-surface border border-border/80 rounded-md space-y-1">
                                     <div className="flex items-center justify-between">
@@ -445,10 +559,67 @@ export default function TaskDetailModal({ isOpen, task, onClose, userList = [], 
 
           {/* TAB 4: ATTACHMENTS */}
           {activeTab === 'attachments' && (
-            <div className="p-8 text-center space-y-2 bg-bg border border-dashed border-border rounded-xl">
-              <Paperclip className="w-8 h-8 text-sub mx-auto" />
-              <p className="text-xs font-bold text-ink uppercase tracking-wider">Attachments</p>
-              <p className="text-xs text-sub">File and image attachments will be supported in the next version.</p>
+            <div className="space-y-4">
+              <h4 className="text-xs font-bold text-ink uppercase tracking-wider">Linked Files</h4>
+
+              {loadingAttachments ? (
+                <div className="py-8 text-center"><Loader2 className="w-5 h-5 animate-spin text-accent mx-auto" /></div>
+              ) : attachments.length === 0 ? (
+                <div className="p-6 text-center text-xs text-sub bg-bg border border-dashed border-border rounded-lg">
+                  No attachments linked yet.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {attachments.map(att => (
+                    <div key={att.id} className="flex items-center justify-between gap-3 p-3 bg-bg border border-border rounded-lg">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <Paperclip className="w-4 h-4 text-sub shrink-0" />
+                        <div className="min-w-0">
+                          <a href={att.url} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-accent hover:underline truncate block">
+                            {att.originalName || att.filename}
+                          </a>
+                          <p className="text-[10px] text-sub truncate">{att.uploader?.name ? `Added by ${att.uploader.name}` : att.url}</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleDeleteAttachment(att.id)}
+                        className="p-1 text-sub hover:text-danger rounded transition-colors shrink-0"
+                        title="Remove attachment"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <form onSubmit={handleAddAttachment} className="space-y-2 pt-2 border-t border-border">
+                <label className="label-field">Attach a link (file URL)</label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Link2 className="w-4 h-4 text-sub absolute left-3 top-2.5" />
+                    <input
+                      type="url"
+                      placeholder="https://..."
+                      value={attachmentUrl}
+                      onChange={(e) => setAttachmentUrl(e.target.value)}
+                      disabled={submittingAttachment}
+                      className="input-field pl-9"
+                    />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Display name (optional)"
+                    value={attachmentName}
+                    onChange={(e) => setAttachmentName(e.target.value)}
+                    disabled={submittingAttachment}
+                    className="input-field w-48"
+                  />
+                  <Button type="submit" variant="secondary" icon={Plus} disabled={submittingAttachment || !attachmentUrl.trim()}>
+                    Add
+                  </Button>
+                </div>
+              </form>
             </div>
           )}
 
@@ -564,7 +735,7 @@ export default function TaskDetailModal({ isOpen, task, onClose, userList = [], 
               <div className="space-y-1">
                 <span className="text-[10px] font-bold text-sub uppercase">Priority</span>
                 <div className="mt-1">
-                  <Badge variant={priorityVariant}>Level {task.priority || 'Medium'}</Badge>
+                  <Badge variant={priorityVariant}>{task.priority || 'MEDIUM'}</Badge>
                 </div>
               </div>
               <div className="space-y-1 relative">
@@ -592,25 +763,16 @@ export default function TaskDetailModal({ isOpen, task, onClose, userList = [], 
                   </div>
                 </div>
               </div>
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold text-sub uppercase">Reporter</span>
-                <div className="flex items-center gap-2 mt-1">
-                  <div className="w-6 h-6 rounded-full bg-sub text-white flex items-center justify-center text-[10px] font-bold">
-                    PM
-                  </div>
-                  <span className="text-sm font-semibold text-ink">Project Manager</span>
-                </div>
-              </div>
             </div>
-            
+
             <div className="border-t border-border pt-4 text-[10px] text-sub space-y-2">
               <div className="flex justify-between">
                 <span>Created:</span>
-                <span className="font-mono">{new Date().toLocaleDateString('en-US')}</span>
+                <span className="font-mono">{task.createdAt ? new Date(task.createdAt).toLocaleDateString('en-US') : '—'}</span>
               </div>
               <div className="flex justify-between">
                 <span>Updated:</span>
-                <span className="font-mono">{new Date().toLocaleDateString('en-US')}</span>
+                <span className="font-mono">{task.updatedAt ? new Date(task.updatedAt).toLocaleDateString('en-US') : '—'}</span>
               </div>
             </div>
           </div>
@@ -657,6 +819,8 @@ export default function TaskDetailModal({ isOpen, task, onClose, userList = [], 
           </div>
         </div>
       )}
+
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   );
 }

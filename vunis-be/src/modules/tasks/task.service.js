@@ -132,7 +132,7 @@ const update = async (taskId, dto) => {
             })
 
             if(currentAssignment){
-                 const endDate = new Date();
+                const endDate = new Date();
                 const startDate = new Date(currentAssignment.startDate)
                 const hoursWorked = Math.abs(endDate.getTime() - startDate.getTime()) / 36e5;
 

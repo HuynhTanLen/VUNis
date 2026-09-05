@@ -1,6 +1,18 @@
 import { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import { Loader2, Mail, Lock, User, Phone, Briefcase, Building, Layers } from 'lucide-react';
+import { Loader2, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react';
+import AuthLayout from './AuthLayout';
+
+const FIELDS = [
+  { name: 'name', label: 'Full name', type: 'text', required: true, placeholder: 'Jane Doe' },
+  { name: 'email', label: 'Email', type: 'email', required: true, placeholder: 'you@email.com' },
+  { name: 'phone', label: 'Phone number', type: 'tel', required: false, placeholder: '0901234567' },
+  { name: 'jobTitle', label: 'Job title', type: 'text', required: false, placeholder: 'Software Engineer' },
+  { name: 'department', label: 'Department', type: 'text', required: false, placeholder: 'Engineering' },
+  { name: 'company', label: 'Company / Organization', type: 'text', required: false, placeholder: 'Organization name' },
+  { name: 'password', label: 'Password', type: 'password', required: true, placeholder: '••••••••' },
+  { name: 'confirmPassword', label: 'Confirm password', type: 'password', required: true, placeholder: '••••••••' },
+];
 
 export default function Register({ onSwitchToLogin }) {
   const [formData, setFormData] = useState({
@@ -36,106 +48,49 @@ export default function Register({ onSwitchToLogin }) {
   };
 
   return (
-    <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-bg px-4 py-8 font-sans text-ink antialiased">
-      <div className="w-full max-w-lg space-y-5">
-        <div className="flex flex-col items-center space-y-2 text-center">
-          <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center text-white font-extrabold text-base">VU</div>
-          <h2 className="text-xl font-bold text-ink tracking-tight">Create VUNIS Account</h2>
-          <p className="text-xs text-sub">Complete your personal and organizational details to join the platform.</p>
-        </div>
-
-        <div className="card-clean p-6 md:p-8 space-y-5">
-          {error && (<div className="bg-danger-soft text-danger border border-danger/20 p-3 rounded-lg text-xs font-medium">{error}</div>)}
-          {success && (<div className="bg-success-soft text-success border border-success/20 p-3 rounded-lg text-xs font-medium">{success}</div>)}
-
-          <form onSubmit={handleRegister} className="space-y-4">
-            <div className="space-y-3">
-              <h3 className="text-xs font-bold text-sub uppercase tracking-wider">1. Basic Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="label-field">Full Name <span className="text-danger">*</span></label>
-                  <div className="relative">
-                    <input type="text" name="name" required value={formData.name} onChange={handleChange} disabled={loading} className="input-field pl-9" placeholder="Huỳnh Tấn Lên" />
-                    <User className="w-4 h-4 text-sub absolute left-3 top-2.5" />
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <label className="label-field">Email Address <span className="text-danger">*</span></label>
-                  <div className="relative">
-                    <input type="email" name="email" required value={formData.email} onChange={handleChange} disabled={loading} className="input-field pl-9" placeholder="ten@gmail.com" />
-                    <Mail className="w-4 h-4 text-sub absolute left-3 top-2.5" />
-                  </div>
-                </div>
-              </div>
-              <div className="space-y-1">
-                <label className="label-field">Phone Number</label>
-                <div className="relative">
-                  <input type="tel" name="phone" value={formData.phone} onChange={handleChange} disabled={loading} className="input-field pl-9" placeholder="0901234567" />
-                  <Phone className="w-4 h-4 text-sub absolute left-3 top-2.5" />
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-3 pt-2 border-t border-border">
-              <h3 className="text-xs font-bold text-sub uppercase tracking-wider">2. Work & Organization</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="label-field">Job Title / Role</label>
-                  <div className="relative">
-                    <input type="text" name="jobTitle" value={formData.jobTitle} onChange={handleChange} disabled={loading} className="input-field pl-9" placeholder="Software Engineer" />
-                    <Briefcase className="w-4 h-4 text-sub absolute left-3 top-2.5" />
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <label className="label-field">Department</label>
-                  <div className="relative">
-                    <input type="text" name="department" value={formData.department} onChange={handleChange} disabled={loading} className="input-field pl-9" placeholder="Engineering" />
-                    <Layers className="w-4 h-4 text-sub absolute left-3 top-2.5" />
-                  </div>
-                </div>
-              </div>
-              <div className="space-y-1">
-                <label className="label-field">Company / Organization</label>
-                <div className="relative">
-                  <input type="text" name="company" value={formData.company} onChange={handleChange} disabled={loading} className="input-field pl-9" placeholder="KS Team Organization" />
-                  <Building className="w-4 h-4 text-sub absolute left-3 top-2.5" />
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-3 pt-2 border-t border-border">
-              <h3 className="text-xs font-bold text-sub uppercase tracking-wider">3. Account Security</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="label-field">Password <span className="text-danger">*</span></label>
-                  <div className="relative">
-                    <input type="password" name="password" required value={formData.password} onChange={handleChange} disabled={loading} className="input-field pl-9" placeholder="••••••••" />
-                    <Lock className="w-4 h-4 text-sub absolute left-3 top-2.5" />
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <label className="label-field">Confirm Password <span className="text-danger">*</span></label>
-                  <div className="relative">
-                    <input type="password" name="confirmPassword" required value={formData.confirmPassword} onChange={handleChange} disabled={loading} className="input-field pl-9" placeholder="••••••••" />
-                    <Lock className="w-4 h-4 text-sub absolute left-3 top-2.5" />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2 mt-4 disabled:opacity-50">
-              {loading ? (<><Loader2 className="w-4 h-4 animate-spin" />Registering...</>) : ('Create Account')}
-            </button>
-          </form>
-        </div>
-
-        <p className="text-center text-sub text-xs">
+    <AuthLayout
+      wide
+      eyebrow="Create account"
+      title="Create account"
+      subtitle="Complete your personal and organizational details to join the platform."
+      footer={
+        <>
           Already have an account?{' '}
-          <button onClick={onSwitchToLogin} disabled={loading} className="text-accent hover:text-accent/80 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-accent/20 rounded">
+          <button onClick={onSwitchToLogin} disabled={loading} className="text-ink font-semibold underline underline-offset-2 hover:text-accent transition-colors focus:outline-none">
             Sign in now
           </button>
-        </p>
-      </div>
-    </div>
+        </>
+      }
+    >
+      {error && (
+        <div className="text-danger border-l-2 border-danger pl-3 py-1 text-xs font-medium flex items-start gap-2 mb-5">
+          <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" /><span>{error}</span>
+        </div>
+      )}
+      {success && (
+        <div className="text-success border-l-2 border-success pl-3 py-1 text-xs font-medium flex items-start gap-2 mb-5">
+          <CheckCircle2 className="w-3.5 h-3.5 shrink-0 mt-0.5" /><span>{success}</span>
+        </div>
+      )}
+
+      <form onSubmit={handleRegister} className="space-y-5">
+        {FIELDS.map((f, i) => (
+          <div key={f.name}>
+            <label className="label-mono">
+              <span className="text-accent">{String(i + 1).padStart(2, '0')}</span> {f.label} {f.required && <span className="text-danger normal-case">*</span>}
+            </label>
+            <input
+              type={f.type} name={f.name} required={f.required}
+              value={formData[f.name]} onChange={handleChange} disabled={loading}
+              className="input-line" placeholder={f.placeholder}
+            />
+          </div>
+        ))}
+
+        <button type="submit" disabled={loading} className="btn-editorial mt-3">
+          {loading ? (<><Loader2 className="w-3.5 h-3.5 animate-spin" />Creating account</>) : (<>Create account<ArrowRight className="w-3.5 h-3.5" /></>)}
+        </button>
+      </form>
+    </AuthLayout>
   );
 }

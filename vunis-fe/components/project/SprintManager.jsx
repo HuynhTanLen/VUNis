@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { getSprintsByProject, createSprint, completeSprint } from '../../services/sprintService';
-import { Rocket, Plus, CheckCircle2, Calendar, Clock, Loader2, Sparkles, AlertCircle, X } from 'lucide-react';
+import { getSprintsByProject, createSprint, completeSprint, startSprint } from '../../services/sprintService';
+import { Rocket, Plus, CheckCircle2, PlayCircle, Calendar, Loader2, X } from 'lucide-react';
+import Toast from '../ui/Toast';
 
 export default function SprintManager({ projectId }) {
     const [sprints, setSprints] = useState([]);
@@ -10,6 +11,13 @@ export default function SprintManager({ projectId }) {
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [completeModal, setCompleteModal] = useState({ isOpen: false, sprintId: null, sprintName: '' });
+    const [startingSprintId, setStartingSprintId] = useState(null);
+    const [toast, setToast] = useState(null);
+
+    const showToast = (message, type = 'success') => {
+        setToast({ message, type });
+        setTimeout(() => setToast(null), 3000);
+    };
 
     useEffect(() => {
         loadSprints();
@@ -22,6 +30,7 @@ export default function SprintManager({ projectId }) {
             setSprints(data);
         } catch (error) {
             console.error("Error fetching Sprints:", error);
+            showToast('Failed to load sprints.', 'error');
         } finally {
             setLoading(false);
         }
@@ -36,8 +45,24 @@ export default function SprintManager({ projectId }) {
             setStartDate('');
             setEndDate('');
             loadSprints();
+            showToast('Sprint created successfully.');
         } catch (error) {
             console.error("Error creating Sprint:", error);
+            showToast(error?.response?.data?.message || 'Failed to create sprint.', 'error');
+        }
+    };
+
+    const handleStartSprint = async (sprint) => {
+        try {
+            setStartingSprintId(sprint.id);
+            await startSprint(sprint.id);
+            loadSprints();
+            showToast(`Sprint "${sprint.name}" started.`);
+        } catch (error) {
+            console.error("Error starting Sprint:", error);
+            showToast(error?.response?.data?.message || 'Failed to start sprint.', 'error');
+        } finally {
+            setStartingSprintId(null);
         }
     };
 
@@ -47,8 +72,10 @@ export default function SprintManager({ projectId }) {
             await completeSprint(completeModal.sprintId);
             setCompleteModal({ isOpen: false, sprintId: null, sprintName: '' });
             loadSprints();
+            showToast('Sprint marked as completed.');
         } catch (error) {
             console.error("Error completing Sprint:", error);
+            showToast(error?.response?.data?.message || 'Failed to complete sprint.', 'error');
             setCompleteModal({ isOpen: false, sprintId: null, sprintName: '' });
         }
     };
@@ -130,20 +157,40 @@ export default function SprintManager({ projectId }) {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {sprints.map((sprint) => {
-                        const isCompleted = sprint.status === 'Completed';
+                        const status = sprint.status || 'PLANNING';
+                        const isPlanning = status === 'PLANNING';
+                        const isActive = status === 'ACTIVE';
+                        const isCompleted = status === 'COMPLETED' || status === 'CLOSED';
+                        const STATUS_BADGE = {
+                            PLANNING: 'bg-bg text-sub border border-border',
+                            ACTIVE: 'bg-accent-soft text-accent',
+                            COMPLETED: 'bg-success-soft text-success',
+                            CLOSED: 'bg-success-soft text-success',
+                        };
+                        const STATUS_LABEL = { PLANNING: 'Planning', ACTIVE: 'Active', COMPLETED: 'Completed', CLOSED: 'Closed' };
                         return (
-                            <div key={sprint.id} className="bg-surface rounded-md border border-border p-4 shadow-sm space-y-4">
+                            <div key={sprint.id} className="bg-surface rounded-md border border-border p-4 space-y-4">
                                 <div className="flex items-start justify-between gap-3 border-b border-border pb-3">
                                     <div className="flex items-center gap-3">
                                         <h4 className="text-sm font-semibold text-ink">{sprint.name}</h4>
-                                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider ${
-                                            isCompleted ? 'bg-success-soft text-success' : 'bg-accent-soft text-accent'
-                                        }`}>
-                                            {isCompleted ? 'Completed' : 'Active'}
+                                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider ${STATUS_BADGE[status] || STATUS_BADGE.PLANNING}`}>
+                                            {STATUS_LABEL[status] || status}
                                         </span>
                                     </div>
 
-                                    {!isCompleted && (
+                                    {isPlanning && (
+                                        <button
+                                            onClick={() => handleStartSprint(sprint)}
+                                            disabled={startingSprintId === sprint.id}
+                                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-accent border border-accent/30 rounded-lg hover:bg-accent-soft transition-colors focus:outline-none focus:ring-2 focus:ring-accent/20 shrink-0 disabled:opacity-50"
+                                        >
+                                            {startingSprintId === sprint.id
+                                                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                : <PlayCircle className="w-3.5 h-3.5" />}
+                                            <span>Start</span>
+                                        </button>
+                                    )}
+                                    {isActive && (
                                         <button
                                             onClick={() => setCompleteModal({ isOpen: true, sprintId: sprint.id, sprintName: sprint.name })}
                                             className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-success border border-success/30 rounded-lg hover:bg-success-soft transition-colors focus:outline-none focus:ring-2 focus:ring-success/20 shrink-0"
@@ -200,6 +247,8 @@ export default function SprintManager({ projectId }) {
                     </div>
                 </div>
             )}
+
+            {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
         </div>
     );
 }

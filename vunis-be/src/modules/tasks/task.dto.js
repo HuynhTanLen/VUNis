@@ -69,7 +69,7 @@ class UpdateTaskDTO {
         if (body.priority !== undefined) this.priority = normalizePriority(body.priority);
         if (body.subtasks !== undefined && Array.isArray(body.subtasks)) this.subtasks = body.subtasks;
         if (body.role !== undefined) this.role = body.role?.trim();
-        if (body.sprintId !== undefined) this.sprint = body.sprintId || null;
+        if (body.sprintId !== undefined) this.sprintId = body.sprintId || null;
         if (body.phaseId !== undefined) this.phaseId = body.phaseId || null;
         if (body.assigneeId !== undefined) this.assigneeId = body.assigneeId || null;
         if (body.startDate !== undefined) this.startDate = body.startDate ? new Date(body.startDate) : null;

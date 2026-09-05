@@ -11,6 +11,12 @@ const toUserResponse = (user) => ({
     role: user.role || 'USER',
     status: user.status || 'offline',
     isBlocked: Boolean(user.isBlocked),
+    phone: user.phone || null,
+    jobTitle: user.jobTitle || null,
+    department: user.department || null,
+    company: user.company || null,
+    avatar: user.avatar || null,
+    hourlyRate: user.hourlyRate ?? 0,
     lastActiveAt: user.lastActiveAt || user.updatedAt,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt

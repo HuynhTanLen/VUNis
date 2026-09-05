@@ -11,28 +11,39 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+        sans: ['"IBM Plex Sans"', 'system-ui', 'sans-serif'],
+        mono: ['"IBM Plex Mono"', 'ui-monospace', 'monospace'],
       },
       colors: {
-        bg: '#F4F5F7',
-        surface: '#FFFFFF',
-        border: '#DFE1E6',
-        ink: '#172B4D',
-        sub: '#5E6C84',
-        accent: '#0C66E4',
-        'accent-hover': '#0052CC',
-        'accent-soft': '#DEEBFF',
-        success: '#00875A',
-        'success-soft': '#E3FCEF',
-        warning: '#FF991F',
-        'warning-soft': '#FFFAE6',
-        danger: '#DE350B',
-        'danger-soft': '#FFEBE6',
-        story: '#36B37E',
-        task: '#4C9AFF',
-        bug: '#FF5630',
-        epic: '#6554C0'
+        // "Drafting paper" — cool technical off-white, never warm cream.
+        bg: '#EEF0F2',
+        surface: '#F8F9FA',
+        // Graphite gridline, the tone of pencil lines on a blueprint grid.
+        border: '#CDD3D6',
+        ink: '#1B2030',
+        sub: '#5B6270',
+        // Signal — a burnt redline-orange, the markup color on a technical drawing.
+        // Replaces the generic indigo/blue every SaaS dashboard reaches for.
+        accent: '#C4491B',
+        'accent-hover': '#A83913',
+        'accent-soft': '#FBEBE1',
+        success: '#3F7D5C',
+        'success-soft': '#E5F0EA',
+        warning: '#AD8A34',
+        'warning-soft': '#F6EFDD',
+        danger: '#B23A2E',
+        'danger-soft': '#F7E7E4',
+        story: '#3F7D5C',
+        task: '#35618C',
+        bug: '#B23A2E',
+        epic: '#6E4F8C'
+      },
+      borderRadius: {
+        DEFAULT: '0.1875rem',
+        md: '0.1875rem',
+        lg: '0.25rem',
+        xl: '0.3125rem',
+        '2xl': '0.375rem',
       },
     },
   },
