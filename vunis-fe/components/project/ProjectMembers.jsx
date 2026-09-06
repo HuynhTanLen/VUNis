@@ -16,6 +16,7 @@ const AVAILABLE_ROLES = [
   { value: 'QA_TESTER', label: 'QA Tester' },
   { value: 'DEVOPS_LEAD', label: 'DevOps Lead' },
   { value: 'DEVOPS_ENGINEER', label: 'DevOps Engineer' },
+  { value: 'BUSINESS_ANALYST', label: 'Business Analyst' },
   { value: 'MEMBER', label: 'Member' }
 ];
 

@@ -77,6 +77,7 @@ export default function Workspace({ project, onBackToProjects }) {
               <Calendar className="w-3.5 h-3.5" />
               <span>
                 {project.durationWeeks ? `${project.durationWeeks} weeks` : project.totalDays ? `${project.totalDays} days` : 'No duration set'}
+                {project.endDate && ` · Kết thúc ${new Date(project.endDate).toLocaleDateString('en-US')}`}
               </span>
             </div>
           </div>

@@ -6,6 +6,7 @@ import { getSprintsByProject } from '../../services/sprintService';
 import TaskDetailModal from './TaskDetailModal';
 import PriorityIcon from '../ui/PriorityIcon';
 import IssueTypeIcon from '../ui/IssueTypeIcon';
+import { TASK_ROLES } from '../../constants/taskRoles';
 
 const COLUMNS = [
   { id: 'TODO', label: 'TO DO', statusKeys: ['TODO', 'Todo', 'todo'], color: 'border-t-sub', badgeBg: 'bg-bg text-sub border border-border' },
@@ -21,17 +22,7 @@ const PRIORITIES = [
   { value: 'low', label: 'Low', color: 'text-sub bg-bg border-border', icon: ArrowDown },
 ];
 
-const ROLES = [
-  'Developer',
-  'Frontend Developer',
-  'Backend Developer',
-  'Fullstack Developer',
-  'UI/UX Designer',
-  'QA Tester',
-  'Project Manager',
-  'Business Analyst',
-  'DevOps Engineer'
-];
+const ROLES = TASK_ROLES;
 
 const EMPTY_TASK = { title: '', role: '', priority: 'medium', assigneeId: '', startDate: '', endDate: '', estimatedCost: '', phaseId: '', sprintId: '' };
 

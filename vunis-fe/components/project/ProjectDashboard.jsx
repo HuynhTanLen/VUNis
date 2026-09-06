@@ -523,6 +523,9 @@ export default function ProjectDashboard({ onSelectProject }) {
                   <div className="flex items-center gap-1.5 font-mono">
                     <Clock className="w-3.5 h-3.5 text-sub" />
                     <span>{formatDuration(project.durationWeeks)}</span>
+                    {project.endDate && (
+                      <span className="text-sub/70">· Kết thúc {new Date(project.endDate).toLocaleDateString('en-US')}</span>
+                    )}
                   </div>
                   <div className="flex items-center gap-1 text-ink font-semibold">
                     {MODEL_LABEL[project.modelType] || project.modelType || 'Waterfall'}

@@ -5,13 +5,15 @@
       "name": "vunis-fe-dev",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "vunis-fe", "run", "dev"],
-      "port": 3000
+      "port": 3000,
+      "autoPort": true
     },
     {
       "name": "vunis-be-dev",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "vunis-be", "run", "dev"],
-      "port": 5000
+      "port": 5000,
+      "autoPort": true
     }
   ]
 }

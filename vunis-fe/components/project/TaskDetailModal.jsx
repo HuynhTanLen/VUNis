@@ -247,7 +247,7 @@ export default function TaskDetailModal({ isOpen, task, onClose, userList = [], 
     }
   };
 
-  const handleStatusChange = async (newStatus) => {
+const handleStatusChange = async (newStatus) => {
     try {
       setStatusLoading(true);
       await updateTask(task.id, { status: newStatus, projectId });
@@ -358,7 +358,7 @@ export default function TaskDetailModal({ isOpen, task, onClose, userList = [], 
               <div className="grid grid-cols-2 gap-4 pt-2">
                 <div className="p-3 bg-bg border border-border rounded-lg space-y-1">
                   <span className="text-[10px] font-bold text-sub uppercase tracking-wider">Role / Function</span>
-                  <p className="text-xs font-semibold text-ink font-mono">{task.role || 'Developer'}</p>
+                  <p className="text-xs font-semibold text-ink font-mono">{task.role || 'Not set'}</p>
                 </div>
                 <div className="p-3 bg-bg border border-border rounded-lg space-y-1">
                   <span className="text-[10px] font-bold text-sub uppercase tracking-wider">Due Date</span>

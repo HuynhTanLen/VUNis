@@ -1,0 +1,2 @@
+-- Add BUSINESS_ANALYST as a valid ProjectRole value.
+ALTER TYPE "ProjectRole" ADD VALUE IF NOT EXISTS 'BUSINESS_ANALYST';

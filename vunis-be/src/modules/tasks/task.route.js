@@ -22,9 +22,9 @@ const { checkProjectPermission } = require('../../middleware/rbac.middleware');
 router.use(protect);
 
 router.post('/', checkProjectPermission(
-    'PROJECT_MANAGER', 
+    'PROJECT_MANAGER',
     'FRONTEND_LEAD', 'BACKEND_LEAD', 'DESIGN_LEAD', 'QA_LEAD', 'DEVOPS_LEAD',
-    'FRONTEND_DEVELOPER', 'BACKEND_DEVELOPER', 'UI_UX_DESIGNER', 'QA_TESTER', 'DEVOPS_ENGINEER', 'MEMBER'
+    'FRONTEND_DEVELOPER', 'BACKEND_DEVELOPER', 'UI_UX_DESIGNER', 'QA_TESTER', 'DEVOPS_ENGINEER', 'BUSINESS_ANALYST', 'MEMBER'
 ), createTask);
 router.get('/:projectId', checkProjectPermission(), getTasksByProject);
 router.put('/:id', checkProjectPermission(), updateTask);
