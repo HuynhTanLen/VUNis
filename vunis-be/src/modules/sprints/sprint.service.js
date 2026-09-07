@@ -10,8 +10,8 @@ const getByProject = async (projectId) => {
 const create = async (projectId, dto) => {
     const sprintData = {
         name: dto.name,
-        startDate: dto.startDate,
-        endDate: dto.endDate,
+        startDate: dto.startDate ? new Date(dto.startDate) : null,
+        endDate: dto.endDate ? new Date(dto.endDate) : null,
         goal:dto.goal,
         projectId: projectId,
         status: 'PLANNING'

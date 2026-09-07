@@ -31,24 +31,28 @@ const deleteTask = asyncHandler(async (req, res) => {
 const addSubTask = asyncHandler(async (req, res) => {
     const { title } = req.body;
     if (!title) return res.status(400).json({ message: 'Tiêu đề việc nhỏ là bắt buộc' });
-    const task = await taskService.addSubTaskService(req.params.id, title);
+    const userProjectRole = req.projectMember?.role || 'PROJECT_MANAGER';
+    const task = await taskService.addSubTaskService(req.params.id, title, req.user.id, userProjectRole);
     res.json(task);
 });
 
 const removeSubTask = asyncHandler(async (req, res) => {
-    const task = await taskService.removeSubTaskService(req.params.id, req.params.subtaskId);
+    const userProjectRole = req.projectMember?.role || 'PROJECT_MANAGER';
+    const task = await taskService.removeSubTaskService(req.params.id, req.params.subtaskId, req.user.id, userProjectRole);
     res.json(task);
 });
 
 const editSubTask = asyncHandler(async (req, res) => {
     const { title } = req.body;
     if (!title) return res.status(400).json({ message: 'Tiêu đề mới là bắt buộc' });
-    const task = await taskService.editSubTaskService(req.params.id, req.params.subtaskId, title);
+    const userProjectRole = req.projectMember?.role || 'PROJECT_MANAGER';
+    const task = await taskService.editSubTaskService(req.params.id, req.params.subtaskId, title, req.user.id, userProjectRole);
     res.json(task);
 });
 
 const toggleSubTask = asyncHandler(async (req, res) => {
-    const task = await taskService.toggleSubtaskService(req.params.id, req.params.subtaskId);
+    const userProjectRole = req.projectMember?.role || 'PROJECT_MANAGER';
+    const task = await taskService.toggleSubtaskService(req.params.id, req.params.subtaskId, req.user.id, userProjectRole);
     res.json(task);
 });
 
